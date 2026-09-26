@@ -6,11 +6,11 @@
 
 ## 1. Current Status Summary
 
-- **Current Layer**: `L04` (Landslide Baseline Hazard Model)
+- **Current Layer**: `L05` (Flood / Flash-Flood Baseline Hazard Model)
 - **Current Status**: `FRAMEWORK IMPLEMENTED & VERIFIED (REAL DATA PENDING)`
-- **Next Task**: L04 real-data readiness and source validation
+- **Next Task**: L05 real-data readiness and riverine/flash-flood source validation
 - **Last Verified Commit**: `7ba343f` (L02 database foundation)
-- **Active Blockers**: `Required authoritative geographic datasets are absent from local data directories`
+- **Active Blockers**: `Required authoritative flood datasets are absent from local data directories`
 
 ---
 
@@ -36,6 +36,7 @@
 - [x] DEM Terrain Derivatives (Horn 3x3 Slope & Aspect) Implemented (`src/spatial/terrain.py`)
 - [x] L03 Unit Test Suite Verified with Isolated Synthetic Fixtures (20/20 passed)
 - [x] L04 Landslide Baseline Engine Implemented and Verified (22/22 focused tests; real data pending)
+- [x] L05 Flood Baseline Engine Implemented and Verified (10/10 focused tests; real data pending; flash-flood scoring unsupported)
 
 ---
 
@@ -46,8 +47,8 @@
 | **L01**  | Data Ingestion & Validation      | **FOUNDATION VERIFIED**                           | [L01 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L01_data_ingestion.md)   | 14/14 Passed                       | `49a204a`       |
 | **L02**  | PostGIS Spatial Database         | **OFFLINE / DDL VERIFIED**<br>_(Live DB Pending)_ | [L02 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L02_spatial_database.md) | 10/10 Passed<br>_(2 live-skipped)_ | `7ba343f`       |
 | **L03**  | GIS Processing & Common Grid     | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L03 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L03_gis_processing.md)   | 20/20 Passed                       | In progress     |
-| **L04**  | Landslide Baseline               | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L04 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L04_landslide_hazard.md) | 9/9 Passed                         | In progress     |
-| **L05**  | Flood / Flash Flood Baseline     | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L04**  | Landslide Baseline               | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L04 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L04_landslide_hazard.md) | 22/22 Passed                       | In progress     |
+| **L05**  | Flood / Flash Flood Baseline     | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L05 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L05_flood_hazard.md)     | 10/10 Passed                       | In progress     |
 | **L06**  | Rainfall Trigger Index           | Queued                                            | Pending                                                                                                               | Pending                            | -               |
 | **L07**  | Multi-Hazard Risk Engine         | Queued                                            | Pending                                                                                                               | Pending                            | -               |
 | **L08**  | Red-Zone Engine                  | Queued                                            | Pending                                                                                                               | Pending                            | -               |
@@ -139,15 +140,19 @@
 
 ### Test Suite Summary
 
-- **Total Tests Passed**: **66 passed, 2 skipped** (14 L01 tests + 10 L02 tests + 20 L03 tests + 22 L04 tests).
+- **Total Tests Passed**: **76 passed, 2 skipped** (14 L01 tests + 10 L02 tests + 20 L03 tests + 22 L04 tests + 10 L05 tests).
 - **Real L04 Data Availability**: No usable boundary, DEM, landslide inventory, LULC, geology, drainage, or roads/infrastructure files are present. `data/raw/`, `data/staging/`, and `data/curated/` contain only `.gitkeep` markers.
 - **L04 Implementation Status**: L04 is implemented as a data-driven baseline engine. Source-specific LULC and lithology mappings are not fabricated; drainage and road distance parameters must be explicitly supplied as dataset/model configuration.
 - **Real L04 Hazard Raster Generated**: **No**. Generation is DATA-PENDING; no geographic values were fabricated.
 - **L04 Limitations**: The deterministic baseline is an uncalibrated susceptibility score, not a probability or prediction. Historical inventory validation is unavailable until a real inventory is ingested.
+- **Real L05 Flood Data Availability**: No usable Chamoli boundary, DEM, river network, discharge, water-level, flood inventory, or observed inundation extent files are present. Data directories contain only `.gitkeep` markers.
+- **Real L05 Flood Hazard Raster Generated**: **No**. Actual Chamoli flood-hazard generation remains DATA-PENDING.
+- **L05 Support Status**: River-proximity evidence and optional observed-extent evidence are implemented. Flash-flood scoring is explicitly unsupported pending real hydrological/event data.
+- **L05 Limitations**: The baseline is not hydraulic simulation, flood probability, return-period analysis, depth/velocity modelling, or official flood certification.
 
 ---
 
 ## 6. Active Blockers & Decisions Log
 
-- **Active Blockers**: Required authoritative geographic datasets are absent from local data directories; L04 source ingestion is the dependency for real output.
+- **Active Blockers**: Required authoritative geographic datasets are absent from local data directories; L05 source ingestion is the dependency for real output and flash-flood extension.
 - **Architectural Decisions**: `OD-01` through `OD-12` strictly respected.

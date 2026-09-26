@@ -1,5 +1,25 @@
 """Hazard stack modules, including the L04 landslide baseline."""
 
+from .flood import (
+	FloodBaselineResult,
+	FloodDataPendingError,
+	FloodInventoryEvidenceResult,
+	FloodModelError,
+	HydrologicalValidationResult,
+	audit_l05_data_readiness,
+	build_flood_provenance,
+	compute_flood_baseline,
+	flood_proximity_factor,
+	normalize_flood_factor,
+	observed_flood_extent_evidence,
+	run_flood_baseline,
+	validate_flood_inventory,
+	validate_flood_weights,
+	validate_hydrological_observations,
+	weighted_flood_combine,
+	write_flood_hazard_raster,
+)
+
 from .landslide import (
 	InventoryValidationResult,
 	InventoryEvidenceResult,
@@ -26,6 +46,12 @@ from .landslide import (
 )
 
 __all__ = [
+	"FloodBaselineResult", "FloodDataPendingError", "FloodInventoryEvidenceResult", "FloodModelError",
+	"HydrologicalValidationResult", "audit_l05_data_readiness", "build_flood_provenance",
+	"compute_flood_baseline", "flood_proximity_factor", "normalize_flood_factor",
+	"observed_flood_extent_evidence", "run_flood_baseline", "validate_flood_inventory",
+	"validate_flood_weights", "validate_hydrological_observations", "weighted_flood_combine",
+	"write_flood_hazard_raster",
 	"InventoryValidationResult", "InventoryEvidenceResult", "LandslideBaselineResult",
 	"LandslideDataPendingError", "LandslideModelError", "MLEligibility",
 	"audit_l04_data_readiness", "build_provenance_metadata", "compute_landslide_baseline",

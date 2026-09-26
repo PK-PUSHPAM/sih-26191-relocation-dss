@@ -14,6 +14,9 @@ landslide_baseline:
   roads: 0.10
   inventory: 0.10
 
+flood_baseline:
+  river_proximity: 1.0
+
 # Multi-Hazard Normalized Risk Score: H = 0.45L + 0.35F + 0.20R
 multi_hazard_risk:
   landslide_weight: 0.45 # L

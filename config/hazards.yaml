@@ -48,3 +48,8 @@ landslide_baseline:
     - { min_degrees: 30.0, max_degrees: 45.0, score: 0.60 }
     - { min_degrees: 45.0, max_degrees: 90.0, score: 1.00 }
   categorical_factor_policy: "Every class must have an explicit configured score; unmapped classes are NoData."
+
+flood_baseline:
+  factor_policy: "Use only validated real flood evidence; omitted factors are not inferred."
+  flash_flood_supported: false
+  proximity_distance_policy: "max_distance_m is a required dataset/model parameter; no default is assumed."
