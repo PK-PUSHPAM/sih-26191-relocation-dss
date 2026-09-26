@@ -7,10 +7,10 @@
 ## 1. Current Status Summary
 
 * **Current Layer**: `L01` (Data Ingestion & Validation)
-* **Current Status**: `NOT STARTED`
-* **Next Task**: L01 specification (`docs/layer-specs/L01_data_ingestion.md`)
-* **Last Verified Commit**: `76e82fc`
-* **Blocking Issues**: `None`
+* **Current Status**: `FOUNDATION IMPLEMENTED & VERIFIED`
+* **Next Task**: L02 specification (`docs/layer-specs/L02_spatial_database.md`)
+* **Last Verified Commit**: `76e82fc` (local branch `main`)
+* **Active Blockers**: `None`
 
 ---
 
@@ -19,9 +19,15 @@
 - [x] Master Blueprint Created & Scope Frozen ([SIH_26191_Final_Blueprint_v1.0.pdf](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/SIH_26191_Final_Blueprint_v1.0.pdf))
 - [x] Repository Directory Structure & Skeletons Initialized
 - [x] Architecture & Data Dictionary Audited ([docs/ARCHITECTURE.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/ARCHITECTURE.md), [docs/data-dictionary.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/data-dictionary.md))
-- [x] Technical CRS Preflight Verification (`EPSG:32644` confirmed optimal for Chamoli)
+- [x] Technical CRS Preflight Verification (`EPSG:32644` confirmed for Chamoli)
 - [x] Secret / Credential Scan Completed (0 tracked secrets)
-- [x] Persistent Context & State Management System Initialized
+- [x] Persistent Context & State Management System Initialized ([docs/PROJECT_CONTEXT.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/PROJECT_CONTEXT.md))
+- [x] Layer Specification Generated ([docs/layer-specs/L01_data_ingestion.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L01_data_ingestion.md))
+- [x] Source Register Audited & Updated ([config/sources.yaml](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/config/sources.yaml))
+- [x] L01 Ingestion Foundation & Multi-Format Adapters Implemented ([src/ingestion/](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/src/ingestion))
+- [x] L01 Unified Validation Engine Implemented ([src/validation/](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/src/validation))
+- [x] Cryptographic Provenance Manifest Generator Implemented ([src/common/provenance.py](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/src/common/provenance.py))
+- [x] L01 Unit & Contract Test Suite Verified (14/14 tests passing)
 
 ---
 
@@ -29,7 +35,7 @@
 
 | Layer ID | Name | Status | Specification | Tests | Verified Commit |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **L01** | Data Ingestion & Validation | **NOT STARTED** | Pending | Pending | - |
+| **L01** | Data Ingestion & Validation | **FOUNDATION VERIFIED** | [L01 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L01_data_ingestion.md) | 14/14 Passed | In progress |
 | **L02** | PostGIS Spatial Database | Queued | Pending | Pending | - |
 | **L03** | GIS Processing & Common Grid | Queued | Pending | Pending | - |
 | **L04** | Landslide Baseline | Queued | Pending | Pending | - |
@@ -49,7 +55,25 @@
 
 ---
 
-## 4. Active Blockers & Decisions Log
+## 4. L01 Implementation Details
+
+### What Was Implemented
+1. Multi-format Ingestion Adapters: `CsvAdapter`, `GeoJsonAdapter`, `ShapefileAdapter`, `GeoPackageAdapter`.
+2. Multi-tier Validation Engine: Evaluates empty files, required columns, null rates, duplicate primary keys, value ranges, allowed vocabularies, CRS presence/validity, geometry topology (`shapely.is_valid`), and regional bounding box intersection.
+3. Raw $\rightarrow$ Staging $\rightarrow$ Curated Pipeline: Fails loudly on validation errors and halts promotion.
+4. Cryptographic Provenance: Generates SHA-256 checksums, metadata, and JSON manifest files for all curated artifacts.
+
+### What Was Verified
+* 14 unit test cases across all validation failure and promotion paths in [tests/unit/test_l01_ingestion.py](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/tests/unit/test_l01_ingestion.py).
+* All tests passing (14/14 passed in 1.17s).
+
+### What Remains for Real Source Ingestion
+* Manual/automated placement of actual raw government data files into `data/raw/` once obtained.
+* Full-scale ingestion execution against live source files.
+
+---
+
+## 5. Active Blockers & Decisions Log
 
 * **Active Blockers**: `None`
-* **Architectural Decisions**: Frozen under `OD-01` to `OD-12`. Any changes require an explicit version bump and impact note.
+* **Architectural Decisions**: `OD-01` through `OD-12` strictly respected.
