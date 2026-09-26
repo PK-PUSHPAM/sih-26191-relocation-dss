@@ -6,7 +6,24 @@
 
 ---
 
-## 1. Non-Negotiable AI Rules
+## 1. Context Loading Policy
+
+Every AI coding agent working on this repository MUST adhere to the following sequence:
+
+1. **Read `docs/PROJECT_CONTEXT.md` First**: Obtain the frozen problem statement, geography, CRS (`EPSG:32644`), formulas, and constraints.
+2. **Read `docs/PROJECT_STATE.md` Second**: Determine current progress, active layer, and verified commit.
+3. **Read Only the Specific Layer Spec**: Read only the specification file (e.g. `docs/layer-specs/L01_data_ingestion.md`) for the current layer being implemented.
+4. **Inspect Only Relevant Code**: Limit repository inspection to files relevant to the current layer contract.
+5. **Do Not Reread the Complete Blueprint** unless explicitly required to resolve a textual ambiguity.
+6. **Do Not Redesign Architecture**: Follow frozen open decisions (`OD-01` to `OD-12`).
+7. **Do Not Hallucinate**: Never invent data, APIs, credentials, government portals, or unverified capabilities.
+8. **Stop and Escalate on Conflicts**: If a architectural or formula conflict is discovered, stop immediately and report it to the user.
+9. **Update `docs/PROJECT_STATE.md`**: At the completion of each layer task, update `docs/PROJECT_STATE.md` with the new status, tests passed, and commit.
+10. **Do Not Auto-Proceed**: Never start the next layer automatically without explicit user review and instruction.
+
+---
+
+## 2. Non-Negotiable AI Rules
 
 1. **Architecture is Frozen**: Do NOT redesign the architecture, change frozen open decisions (OD-01 to OD-12), or substitute core technologies. If you think an architecture change is needed, STOP and inform the user.
 2. **Single Layer Scope**: Do NOT attempt to implement multiple layers in a single prompt. **One layer = one implementation contract = one testable checkpoint/merge.**
@@ -16,7 +33,7 @@
 
 ---
 
-## 2. The 7-Step AI Development Loop
+## 3. The 7-Step AI Development Loop
 
 For every layer (from L01 to L17), the AI workflow must follow this exact loop:
 
@@ -44,7 +61,7 @@ For every layer (from L01 to L17), the AI workflow must follow this exact loop:
 
 ---
 
-## 3. Standard AI Master Prompt Template
+## 4. Standard AI Master Prompt Template
 
 When instructing an AI to implement any layer, use the following standardized prompt:
 
@@ -70,7 +87,7 @@ After implementation, run the relevant tests and provide:
 
 ---
 
-## 4. Layer Prompt Cheat Sheet (Section 18)
+## 5. Layer Prompt Cheat Sheet (Section 18)
 
 | Phase | Target Layer | Prompt Summary / Scope |
 | :--- | :--- | :--- |
@@ -84,7 +101,7 @@ After implementation, run the relevant tests and provide:
 
 ---
 
-## 5. Division of Labor & Human Checkpoints (Section 19)
+## 6. Division of Labor & Human Checkpoints (Section 19)
 
 * **Architecture**: AI reviews consistency; Human approves frozen design.
 * **Coding & Tests**: AI writes clean, typed Python/React code and tests; Human reviews diffs.

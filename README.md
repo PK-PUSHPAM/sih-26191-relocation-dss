@@ -18,7 +18,18 @@ The system answers five core decision questions:
 
 ---
 
-## 2. Frozen Scope & Core Decisions (OD-01 to OD-12)
+## 2. Current Status & Active Progress
+
+For real-time development status, active layer contracts, and verified milestones, refer to:
+* **Active Status & Progress Tracker**: [docs/PROJECT_STATE.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/PROJECT_STATE.md)
+* **Permanent Architecture Context**: [docs/PROJECT_CONTEXT.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/PROJECT_CONTEXT.md)
+* **Layer Contracts & Specifications**: [docs/layer-specs/README.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/README.md)
+
+*Current Development Stage*: **L01: Data Ingestion & Validation** (`NOT STARTED`).
+
+---
+
+## 3. Frozen Scope & Core Decisions (OD-01 to OD-12)
 
 * **Frozen Prototype Geography**: Chamoli District, Uttarakhand (OD-01).
 * **Core Hazards**: Landslide + Flood / Flash Flood + Extreme/Heavy Rainfall trigger (OD-02).
@@ -35,7 +46,7 @@ The system answers five core decision questions:
 
 ---
 
-## 3. Technology Stack
+## 4. Technology Stack
 
 | Layer | Component | Technology Selection |
 | :--- | :--- | :--- |
@@ -49,7 +60,7 @@ The system answers five core decision questions:
 
 ---
 
-## 4. 17-Layer Architecture Overview
+## 5. 17-Layer Architecture Overview
 
 ```
 DATA SOURCES
@@ -104,7 +115,7 @@ L17: Testing, Deployment & Audit
 
 ---
 
-## 5. Development Workflow & AI Rules
+## 6. Development Workflow & AI Rules
 
 This repository follows a strict **Layer-by-Layer 7-Step Development Loop**:
 1. Provide the master blueprint and specific layer contract.
@@ -126,7 +137,7 @@ This repository follows a strict **Layer-by-Layer 7-Step Development Loop**:
 
 ---
 
-## 6. Repository Layout
+## 7. Repository Layout
 
 ```
 sih-26191-relocation-dss/
@@ -149,7 +160,7 @@ sih-26191-relocation-dss/
 
 ---
 
-## 7. System Boundaries & Explicit Non-Claims
+## 8. System Boundaries & Explicit Non-Claims
 
 | Inside Prototype Scope | Explicitly Outside Scope / Not Claimed |
 | :--- | :--- |
