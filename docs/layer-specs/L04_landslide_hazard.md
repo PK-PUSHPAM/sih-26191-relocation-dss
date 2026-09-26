@@ -44,14 +44,14 @@ usability flags. It never downloads or synthesizes data.
 Only factors supplied as validated real data are selected. The configured
 candidate weights are:
 
-| Factor      | Weight | Transformation                                                             |
-| ----------- | -----: | -------------------------------------------------------------------------- |
-| `slope`     |   0.35 | L03 Horn 3x3 slope in degrees, then configured interval reclassification   |
-| `lulc`      |   0.20 | Explicit class-to-score mapping; unmapped observed classes become NoData |
+| Factor      | Weight | Transformation                                                               |
+| ----------- | -----: | ---------------------------------------------------------------------------- |
+| `slope`     |   0.35 | L03 Horn 3x3 slope in degrees, then configured interval reclassification     |
+| `lulc`      |   0.20 | Explicit class-to-score mapping; unmapped observed classes become NoData     |
 | `geology`   |   0.15 | Explicit lithology-to-score mapping; unmapped observed classes become NoData |
-| `drainage`  |   0.10 | Vector distance transformed with an explicit maximum distance parameter |
-| `roads`     |   0.10 | Vector distance transformed with an explicit maximum distance parameter |
-| `inventory` |   0.10 | Deterministic inventory evidence/density grid when a real inventory exists |
+| `drainage`  |   0.10 | Vector distance transformed with an explicit maximum distance parameter      |
+| `roads`     |   0.10 | Vector distance transformed with an explicit maximum distance parameter      |
+| `inventory` |   0.10 | Deterministic inventory evidence/density grid when a real inventory exists   |
 
 The weights of supplied factors are renormalized by their selected-weight sum.
 No factor is inferred merely because it is listed in configuration. The file
