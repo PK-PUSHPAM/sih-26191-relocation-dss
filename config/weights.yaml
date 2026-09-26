@@ -1,0 +1,42 @@
+# ==============================================================================
+# SIH 26191 - Weights Configuration
+# Blueprint Reference: Section 2 (OD-06, OD-07, OD-09), Sections 5, 6, 7, 9, 23
+# Note: Frozen as prototype configuration. Sum of weights in each block equals 1.00.
+# ==============================================================================
+
+version: "1.0"
+
+# Multi-Hazard Normalized Risk Score: H = 0.45L + 0.35F + 0.20R
+multi_hazard_risk:
+  landslide_weight: 0.45   # L
+  flood_weight: 0.35       # F
+  rainfall_weight: 0.20    # R
+
+# Habitation Vulnerability Score: V = 0.35P + 0.25S + 0.20A + 0.10I + 0.10D
+vulnerability:
+  population_exposure: 0.35     # P: Exposed population / households share
+  social_vulnerability: 0.25    # S: Census 2011 social & demographic indicators
+  service_deficit: 0.20         # A: Access deficit to roads, health, water, education
+  infrastructure_dep: 0.10      # I: Critical infrastructure dependency
+  disaster_recurrence: 0.10     # D: Historical disaster frequency
+
+# Candidate Relocation Site Suitability Score:
+# S = 0.30Hsafe + 0.15Slope + 0.15Road + 0.15Water + 0.10Health + 0.05Education + 0.05LandUse + 0.05Services
+site_suitability:
+  hazard_safety: 0.30           # Hsafe: Inverse of modeled multi-hazard risk
+  slope: 0.15                   # Slope suitability
+  road_access: 0.15             # Road network connectivity
+  water_availability: 0.15      # Drinking water proximity / availability
+  healthcare_access: 0.10       # Healthcare facility proximity
+  education_access: 0.05        # Education facility proximity
+  land_use: 0.05                # Buildable land-use class
+  service_proximity: 0.05       # General essential services proximity
+
+# Habitation Relocation Priority Score:
+# RP = 0.40Risk + 0.25ExposedPopulation + 0.20Vulnerability + 0.10ResponseDifficulty + 0.05Recurrence
+relocation_priority:
+  hazard_risk: 0.40             # Multi-hazard risk level
+  exposed_population: 0.25      # Population exposed in red/high-hazard zones
+  vulnerability_score: 0.20     # Habitation vulnerability score (V)
+  response_difficulty: 0.10     # Remote access & evacuation difficulty
+  historical_recurrence: 0.05   # Past disaster recurrence count

@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # Database Service: PostgreSQL with PostGIS extension
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: sih_chamoli_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sih_chamoli_dss}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sih_chamoli_dss"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API Service: FastAPI + GIS runtime
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: sih_chamoli_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-sih_chamoli_dss}
+      CANONICAL_CRS_EPSG: ${CANONICAL_CRS_EPSG:-32644}
+      CANONICAL_GRID_RESOLUTION_M: ${CANONICAL_GRID_RESOLUTION_M:-30}
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./ml:/app/ml
+
+  # Frontend Service: React + MapLibre / Leaflet UI
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    container_name: sih_chamoli_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:

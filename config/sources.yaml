@@ -1,0 +1,96 @@
+# ==============================================================================
+# SIH 26191 - Verified Data Sources Registry & Manifest
+# Blueprint Reference: Section 3, Section 24
+# Note: Ingestion pipelines must record access date, version, and checksum per dataset.
+# ==============================================================================
+
+version: "1.0"
+
+sources:
+  - id: usdma_chamoli_ddmp
+    agency: "Uttarakhand State Disaster Management Authority (USDMA)"
+    name: "Chamoli District Disaster Management Plan"
+    category: "disaster_history_and_profile"
+    url: "https://usdma.uk.gov.in/document-category/district-disaster-management-plan/"
+    format: "PDF / machine-readable tables"
+    processing: "Extract historical disaster events, vulnerable habitations list, local risk profile"
+
+  - id: census_2011_chamoli_dchb_a
+    agency: "Census India / Office of the Registrar General & Census Commissioner"
+    name: "Chamoli District Census Handbook (DCHB) - Village & Town Directory (Part A)"
+    category: "village_amenities"
+    url: "https://censusindia.gov.in/nada/index.php/catalog/1306"
+    format: "PDF / Excel / CSV"
+    processing: "Normalize categorical village amenities (health, education, water, power, roads) into numeric proxies"
+
+  - id: census_2011_chamoli_dchb_b
+    agency: "Census India / Office of the Registrar General & Census Commissioner"
+    name: "Chamoli District Census Handbook (DCHB) - Primary Census Abstract (Part B)"
+    category: "population_demographics"
+    url: "https://censusindia.gov.in/nada/index.php/catalog/1307/study-description"
+    format: "CSV / Excel"
+    processing: "Extract village/town level population, households, vulnerable demographic groups"
+
+  - id: nwic_imd_daily_rainfall
+    agency: "National Water Informatics Centre (NWIC) / IMD"
+    name: "IMD District & Station Daily Rainfall"
+    category: "meteorological_trigger"
+    url: "https://nwdp.nwic.gov.in/dataset/rainfall-daily-imd"
+    format: "CSV / API"
+    processing: "Compute daily, rolling 3-day, and cumulative rainfall trigger features"
+
+  - id: nwc_cwc_river_discharge
+    agency: "National Water Informatics Centre (NWIC) / Central Water Commission (CWC)"
+    name: "CWC Uttarakhand Hourly River Discharge Telemetry"
+    category: "hydrology_telemetry"
+    url: "https://nwdp.nwic.gov.in/dataset/river-discharge-telemetry-hourly-central-water-commission-cwc"
+    format: "CSV / API"
+    processing: "Discharge station-to-river association, peak flow threshold tracking"
+
+  - id: bhuvan_disaster_services
+    agency: "National Remote Sensing Centre (NRSC) / ISRO"
+    name: "Bhuvan Disaster Services GIS Layers"
+    category: "spatial_disaster_layers"
+    url: "https://bhuvan-app1.nrsc.gov.in/disaster/disaster.php"
+    format: "WMS / Vector / Raster"
+    processing: "Spatial query, layer clipping to Chamoli boundary"
+
+  - id: bhuvan_landslide_inventory
+    agency: "National Remote Sensing Centre (NRSC) / ISRO"
+    name: "Bhuvan Landslide Geoportal & Inventory"
+    category: "landslide_inventory"
+    url: "https://bhuvan-app1.nrsc.gov.in/disaster/usrtasks/landslide/landslide.php?uname=empty"
+    format: "Shapefile / GeoJSON / WFS"
+    processing: "Reprojection to EPSG:32644, spatial deduplication, confidence assignment"
+
+  - id: bhuvan_historical_landslide_2013
+    agency: "NRSC / ISRO"
+    name: "Uttarakhand 2013 Landslide Inventory Study"
+    category: "historical_benchmark"
+    url: "https://bhuvan-app1.nrsc.gov.in/disaster/usrtasks/landslide/doc/Uttarkhand_Landslide_inventory_2013.pdf"
+    format: "Document / Spatial dataset"
+    processing: "Validation benchmark for landslide susceptibility"
+
+  - id: uttarakhand_ogd_admin
+    agency: "Uttarakhand Open Government Data (OGD) Portal"
+    name: "Uttarakhand Administrative Boundaries"
+    category: "administrative_boundaries"
+    url: "https://uttarakhand.data.gov.in/catalog/admin-boundaries"
+    format: "GeoJSON / Shapefile"
+    processing: "Normalize district, tehsil/block, village boundaries; validate topology"
+
+  - id: bhuvan_thematic_layers
+    agency: "NRSC / ISRO"
+    name: "Bhuvan Thematic Dashboard (Land Use / Land Cover)"
+    category: "land_cover_use"
+    url: "https://bhuvan-app1.nrsc.gov.in/thematic_dashboard/"
+    format: "Raster / Vector"
+    processing: "Reclassify LULC into allowed/conditional/excluded suitability classes"
+
+  - id: bhuvan_uk_forest_viewer
+    agency: "NRSC / Forest Department Uttarakhand"
+    name: "Uttarakhand Forest & Ecological Layers"
+    category: "ecological_constraints"
+    url: "https://bhuvan-app1.nrsc.gov.in/uk_forest/"
+    format: "WMS / GeoJSON"
+    processing: "Extract restricted reserve forest polygons for hard exclusion masking"

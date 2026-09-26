@@ -1,0 +1,41 @@
+# ==============================================================================
+# SIH 26191 - Hazard Configuration
+# Blueprint Reference: Section 2 (OD-02, OD-04, OD-05), Section 5, Section 23
+# Note: Prototype configuration values are frozen for initial release.
+# ==============================================================================
+
+version: "1.0"
+study_area:
+  district: "Chamoli"
+  state: "Uttarakhand"
+  country: "India"
+  canonical_crs: "EPSG:32644"  # WGS 84 / UTM Zone 44N
+  interchange_crs: "EPSG:4326" # WGS 84 Lat/Long
+  grid_resolution_meters: 30
+
+core_hazards:
+  - id: landslide
+    code: L
+    name: "Landslide Susceptibility and Hazard"
+    baseline_source: "NRSC/Bhuvan + GSI"
+    normalization_range: [0.0, 1.0]
+
+  - id: flood
+    code: F
+    name: "Flood / Flash Flood Hazard"
+    baseline_source: "CWC via NWIC + Bhuvan/India-WRIS"
+    normalization_range: [0.0, 1.0]
+
+  - id: rainfall
+    code: R
+    name: "Extreme / Heavy Rainfall Trigger"
+    baseline_source: "IMD Daily Rainfall via NWIC"
+    normalization_range: [0.0, 1.0]
+
+hard_exclusions:
+  slope_degree_limit: 45.0          # Slopes > 45° are excluded from permanent habitation
+  active_channel_buffer_m: 50.0     # Default river active-channel buffer
+  exclude_water_bodies: true
+  exclude_restricted_forests: true
+  exclude_existing_infrastructure: true
+  exclude_very_high_landslide: true
