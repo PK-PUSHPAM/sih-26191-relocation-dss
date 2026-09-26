@@ -6,10 +6,10 @@
 
 ## 1. Current Status Summary
 
-* **Current Layer**: `L01` (Data Ingestion & Validation)
-* **Current Status**: `FOUNDATION IMPLEMENTED & VERIFIED`
-* **Next Task**: L02 specification (`docs/layer-specs/L02_spatial_database.md`)
-* **Last Verified Commit**: `76e82fc` (local branch `main`)
+* **Current Layer**: `L02` (PostGIS Spatial Database)
+* **Current Status**: `OFFLINE / DDL VERIFIED (LIVE DATABASE VERIFICATION PENDING)`
+* **Next Task**: L03 specification (`docs/layer-specs/L03_gis_processing.md`)
+* **Last Verified Commit**: `49a204a` (local branch `main`)
 * **Active Blockers**: `None`
 
 ---
@@ -22,12 +22,13 @@
 - [x] Technical CRS Preflight Verification (`EPSG:32644` confirmed for Chamoli)
 - [x] Secret / Credential Scan Completed (0 tracked secrets)
 - [x] Persistent Context & State Management System Initialized ([docs/PROJECT_CONTEXT.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/PROJECT_CONTEXT.md))
-- [x] Layer Specification Generated ([docs/layer-specs/L01_data_ingestion.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L01_data_ingestion.md))
-- [x] Source Register Audited & Updated ([config/sources.yaml](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/config/sources.yaml))
-- [x] L01 Ingestion Foundation & Multi-Format Adapters Implemented ([src/ingestion/](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/src/ingestion))
-- [x] L01 Unified Validation Engine Implemented ([src/validation/](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/src/validation))
-- [x] Cryptographic Provenance Manifest Generator Implemented ([src/common/provenance.py](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/src/common/provenance.py))
-- [x] L01 Unit & Contract Test Suite Verified (14/14 tests passing)
+- [x] Layer Specification Generated: L01 Data Ingestion ([docs/layer-specs/L01_data_ingestion.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L01_data_ingestion.md))
+- [x] L01 Ingestion Foundation & Multi-Format Adapters Implemented (14/14 tests passing)
+- [x] Layer Specification Generated: L02 Spatial Database ([docs/layer-specs/L02_spatial_database.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L02_spatial_database.md))
+- [x] PostGIS SQL Migrations (001–005) Audited and Refined under `db/migrations/`
+- [x] SQLAlchemy & GeoAlchemy2 Models Created under `src/db/` (`SRID = 32644`)
+- [x] Database Migration Runner Created ([scripts/init_db.py](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/scripts/init_db.py))
+- [x] L02 DDL & Schema Unit Test Suite Verified (24/24 unit/contract tests passing)
 
 ---
 
@@ -35,8 +36,8 @@
 
 | Layer ID | Name | Status | Specification | Tests | Verified Commit |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **L01** | Data Ingestion & Validation | **FOUNDATION VERIFIED** | [L01 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L01_data_ingestion.md) | 14/14 Passed | In progress |
-| **L02** | PostGIS Spatial Database | Queued | Pending | Pending | - |
+| **L01** | Data Ingestion & Validation | **FOUNDATION VERIFIED** | [L01 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L01_data_ingestion.md) | 14/14 Passed | `49a204a` |
+| **L02** | PostGIS Spatial Database | **OFFLINE / DDL VERIFIED**<br>*(Live DB Pending)* | [L02 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L02_spatial_database.md) | 9/9 Passed<br>*(2 live-skipped)* | In progress |
 | **L03** | GIS Processing & Common Grid | Queued | Pending | Pending | - |
 | **L04** | Landslide Baseline | Queued | Pending | Pending | - |
 | **L05** | Flood / Flash Flood Baseline | Queued | Pending | Pending | - |
@@ -55,21 +56,39 @@
 
 ---
 
-## 4. L01 Implementation Details
+## 4. L02 Implementation Details & Review Checkpoint Corrections
 
 ### What Was Implemented
-1. Multi-format Ingestion Adapters: `CsvAdapter`, `GeoJsonAdapter`, `ShapefileAdapter`, `GeoPackageAdapter`.
-2. Multi-tier Validation Engine: Evaluates empty files, required columns, null rates, duplicate primary keys, value ranges, allowed vocabularies, CRS presence/validity, geometry topology (`shapely.is_valid`), and regional bounding box intersection.
-3. Raw $\rightarrow$ Staging $\rightarrow$ Curated Pipeline: Fails loudly on validation errors and halts promotion.
-4. Cryptographic Provenance: Generates SHA-256 checksums, metadata, and JSON manifest files for all curated artifacts.
+1. **PostGIS SQL Migrations (`db/migrations/`)**:
+   - `001_extensions.sql`: Enables `postgis` and `uuid-ossp` extensions.
+   - `002_provenance_and_metadata.sql`: DDL for `data_source`, `model_run`, `hazard_layer`.
+   - `003_core_entities.sql`: DDL for `admin_unit`, `habitation`, `infrastructure` with `SRID = 32644`.
+   - `004_analytical_entities.sql`: DDL for empty analytical schemas: `risk_cell`, `vulnerability`, `candidate_site`, `capacity`, `priority`, `allocation`.
+   - `005_indexes.sql`: Creates GiST spatial indexes and B-Tree relationship indexes.
+2. **Database Engine & ORM Layer (`src/db/`)**:
+   - `session.py`: Database engine with `psycopg` driver, connection pooling, and fast probe.
+   - `models.py`: 12 declarative SQLAlchemy + GeoAlchemy2 models enforcing SRID 32644 geometries, RESTRICT foreign keys, and CHECK constraints.
+3. **Migration Runner (`scripts/init_db.py`)**:
+   - Sequential, atomic transaction execution and offline syntax auditing.
 
-### What Was Verified
-* 14 unit test cases across all validation failure and promotion paths in [tests/unit/test_l01_ingestion.py](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/tests/unit/test_l01_ingestion.py).
-* All tests passing (14/14 passed in 1.17s).
+### Corrections Made at L02 Review Checkpoint
+1. **Status / Verification Language**:
+   - Clarified that L02 is **OFFLINE / DDL VERIFIED** and that **LIVE DATABASE VERIFICATION IS PENDING**. Live PostGIS migration execution will occur once a PostgreSQL container/service is running.
+2. **Analytical Tables Justification**:
+   - Verified all 6 analytical tables against [docs/data-dictionary.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/data-dictionary.md). Confirmed they are purely empty persistence contracts with zero embedded calculation or business logic.
+3. **Geometry Types Correction**:
+   - Corrected `candidate_site.geom` from generic `Geometry` to concrete `GEOMETRY(Polygon, 32644)` per data dictionary line 133 ("Site polygon footprint").
+   - Documented why `habitation.geom` uses generic `Geometry(32644)` (accommodates Point centroids and settlement Polygons per data dictionary line 59).
+   - Documented why `infrastructure.geom` uses generic `Geometry(32644)` (accommodates Point facilities and LineString corridors per data dictionary line 74).
+4. **Foreign Key Policy (Audit Preservation)**:
+   - Replaced all `ON DELETE CASCADE` clauses in analytical tables with `ON DELETE RESTRICT` (`vulnerability`, `capacity`, `priority`, `allocation`). This ensures optimization runs, provenance, and analytical results cannot be accidentally wiped.
+5. **CHECK Constraints Justification**:
+   - Verified that all CHECK constraints strictly derive from the data dictionary and blueprint specifications.
 
-### What Remains for Real Source Ingestion
-* Manual/automated placement of actual raw government data files into `data/raw/` once obtained.
-* Full-scale ingestion execution against live source files.
+### Verification Status
+* **Unit & Offline Integration Tests**: 24 passed (14 for L01, 10 for L02).
+* **Live Integration Tests**: 2 skipped (PostgreSQL port 5432 offline on host / Docker unavailable).
+* Total suite execution: 24 passed, 2 skipped in ~3.0s.
 
 ---
 
