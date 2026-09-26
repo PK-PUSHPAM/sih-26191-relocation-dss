@@ -9,7 +9,7 @@ study_area:
   district: "Chamoli"
   state: "Uttarakhand"
   country: "India"
-  canonical_crs: "EPSG:32644"  # WGS 84 / UTM Zone 44N
+  canonical_crs: "EPSG:32644" # WGS 84 / UTM Zone 44N
   interchange_crs: "EPSG:4326" # WGS 84 Lat/Long
   grid_resolution_meters: 30
 
@@ -33,9 +33,18 @@ core_hazards:
     normalization_range: [0.0, 1.0]
 
 hard_exclusions:
-  slope_degree_limit: 45.0          # Slopes > 45° are excluded from permanent habitation
-  active_channel_buffer_m: 50.0     # Default river active-channel buffer
+  slope_degree_limit: 45.0 # Slopes > 45° are excluded from permanent habitation
+  active_channel_buffer_m: 50.0 # Default river active-channel buffer
   exclude_water_bodies: true
   exclude_restricted_forests: true
   exclude_existing_infrastructure: true
   exclude_very_high_landslide: true
+
+landslide_baseline:
+  factor_policy: "Use only factors with validated real data; renormalize supplied factor weights."
+  slope_classes:
+    - { min_degrees: 0.0, max_degrees: 15.0, score: 0.00 }
+    - { min_degrees: 15.0, max_degrees: 30.0, score: 0.25 }
+    - { min_degrees: 30.0, max_degrees: 45.0, score: 0.60 }
+    - { min_degrees: 45.0, max_degrees: 90.0, score: 1.00 }
+  categorical_factor_policy: "Every class must have an explicit configured score; unmapped classes are NoData."

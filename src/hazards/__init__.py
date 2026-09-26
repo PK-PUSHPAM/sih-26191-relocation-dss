@@ -1,4 +1,36 @@
-"""
-Layers 04-06: Hazard Stack Module
-L04 Landslide baseline, L05 Flood/Flash-flood baseline, L06 Rainfall trigger index.
-"""
+"""Hazard stack modules, including the L04 landslide baseline."""
+
+from .landslide import (
+	InventoryValidationResult,
+	InventoryEvidenceResult,
+	LandslideBaselineResult,
+	LandslideDataPendingError,
+	LandslideModelError,
+	MLEligibility,
+	audit_l04_data_readiness,
+	build_provenance_metadata,
+	compute_landslide_baseline,
+	drainage_proximity_factor,
+	inventory_evidence,
+	ml_eligibility_gate,
+	normalize_continuous,
+	reclassify_categorical,
+	reclassify_slope,
+	road_proximity_factor,
+	run_landslide_baseline,
+	slope_factor_from_dem,
+	validate_landslide_inventory,
+	validate_weights,
+	weighted_combine,
+	write_landslide_hazard_raster,
+)
+
+__all__ = [
+	"InventoryValidationResult", "InventoryEvidenceResult", "LandslideBaselineResult",
+	"LandslideDataPendingError", "LandslideModelError", "MLEligibility",
+	"audit_l04_data_readiness", "build_provenance_metadata", "compute_landslide_baseline",
+	"drainage_proximity_factor", "inventory_evidence", "ml_eligibility_gate", "normalize_continuous",
+	"reclassify_categorical", "reclassify_slope", "road_proximity_factor", "run_landslide_baseline",
+	"slope_factor_from_dem", "validate_landslide_inventory", "validate_weights", "weighted_combine",
+	"write_landslide_hazard_raster",
+]

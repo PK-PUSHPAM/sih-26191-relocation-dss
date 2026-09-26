@@ -6,11 +6,11 @@
 
 ## 1. Current Status Summary
 
-* **Current Layer**: `L03` (GIS Processing & Common Spatial Grid)
-* **Current Status**: `FRAMEWORK IMPLEMENTED & VERIFIED (REAL DATA PENDING)`
-* **Next Task**: L03 review checkpoint / user sign-off
-* **Last Verified Commit**: `7ba343f` (L02 database foundation)
-* **Active Blockers**: `None`
+- **Current Layer**: `L04` (Landslide Baseline Hazard Model)
+- **Current Status**: `FRAMEWORK IMPLEMENTED & VERIFIED (REAL DATA PENDING)`
+- **Next Task**: L04 real-data readiness and source validation
+- **Last Verified Commit**: `7ba343f` (L02 database foundation)
+- **Active Blockers**: `Required authoritative geographic datasets are absent from local data directories`
 
 ---
 
@@ -34,38 +34,39 @@
 - [x] Vector Study-Area Ingestion, Validation & Clipping Implemented (`src/spatial/vector.py`)
 - [x] Raster Alignment Validator & Continuous/Categorical Resampling Implemented (`src/spatial/raster.py`)
 - [x] DEM Terrain Derivatives (Horn 3x3 Slope & Aspect) Implemented (`src/spatial/terrain.py`)
-- [x] L03 Unit Test Suite Verified with Isolated Synthetic Fixtures (20/20 passed; total test suite 44 passed, 2 skipped)
+- [x] L03 Unit Test Suite Verified with Isolated Synthetic Fixtures (20/20 passed)
+- [x] L04 Landslide Baseline Engine Implemented and Verified (22/22 focused tests; real data pending)
 
 ---
 
 ## 3. Layer Implementation Progress
 
-| Layer ID | Name | Status | Specification | Tests | Verified Commit |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **L01** | Data Ingestion & Validation | **FOUNDATION VERIFIED** | [L01 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L01_data_ingestion.md) | 14/14 Passed | `49a204a` |
-| **L02** | PostGIS Spatial Database | **OFFLINE / DDL VERIFIED**<br>*(Live DB Pending)* | [L02 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L02_spatial_database.md) | 10/10 Passed<br>*(2 live-skipped)* | `7ba343f` |
-| **L03** | GIS Processing & Common Grid | **FRAMEWORK VERIFIED**<br>*(Real Data Pending)* | [L03 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L03_gis_processing.md) | 20/20 Passed | In progress |
-| **L04** | Landslide Baseline | Queued | Pending | Pending | - |
-| **L05** | Flood / Flash Flood Baseline | Queued | Pending | Pending | - |
-| **L06** | Rainfall Trigger Index | Queued | Pending | Pending | - |
-| **L07** | Multi-Hazard Risk Engine | Queued | Pending | Pending | - |
-| **L08** | Red-Zone Engine | Queued | Pending | Pending | - |
-| **L09** | Exposure & Vulnerability Engine | Queued | Pending | Pending | - |
-| **L10** | Relocation Site Suitability | Queued | Pending | Pending | - |
-| **L11** | Carrying Capacity Engine | Queued | Pending | Pending | - |
-| **L12** | Relocation Priority Engine | Queued | Pending | Pending | - |
-| **L13** | Allocation Optimization (CP-SAT) | Queued | Pending | Pending | - |
-| **L14** | Update & Recompute Engine | Queued | Pending | Pending | - |
-| **L15** | FastAPI Integration Layer | Queued | Pending | Pending | - |
-| **L16** | Dashboard & Decision Reports | Queued | Pending | Pending | - |
-| **L17** | Testing, Docker & Final Audit | Queued | Pending | Pending | - |
-
+| Layer ID | Name                             | Status                                            | Specification                                                                                                         | Tests                              | Verified Commit |
+| :------- | :------------------------------- | :------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------- | :--------------------------------- | :-------------- |
+| **L01**  | Data Ingestion & Validation      | **FOUNDATION VERIFIED**                           | [L01 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L01_data_ingestion.md)   | 14/14 Passed                       | `49a204a`       |
+| **L02**  | PostGIS Spatial Database         | **OFFLINE / DDL VERIFIED**<br>_(Live DB Pending)_ | [L02 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L02_spatial_database.md) | 10/10 Passed<br>_(2 live-skipped)_ | `7ba343f`       |
+| **L03**  | GIS Processing & Common Grid     | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L03 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L03_gis_processing.md)   | 20/20 Passed                       | In progress     |
+| **L04**  | Landslide Baseline               | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L04 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L04_landslide_hazard.md) | 9/9 Passed                         | In progress     |
+| **L05**  | Flood / Flash Flood Baseline     | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L06**  | Rainfall Trigger Index           | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L07**  | Multi-Hazard Risk Engine         | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L08**  | Red-Zone Engine                  | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L09**  | Exposure & Vulnerability Engine  | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L10**  | Relocation Site Suitability      | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L11**  | Carrying Capacity Engine         | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L12**  | Relocation Priority Engine       | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L13**  | Allocation Optimization (CP-SAT) | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L14**  | Update & Recompute Engine        | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L15**  | FastAPI Integration Layer        | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L16**  | Dashboard & Decision Reports     | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L17**  | Testing, Docker & Final Audit    | Queued                                            | Pending                                                                                                               | Pending                            | -               |
 
 ---
 
 ## 4. L02 Implementation Details & Review Checkpoint Corrections
 
 ### What Was Implemented
+
 1. **PostGIS SQL Migrations (`db/migrations/`)**:
    - `001_extensions.sql`: Enables `postgis` and `uuid-ossp` extensions.
    - `002_provenance_and_metadata.sql`: DDL for `data_source`, `model_run`, `hazard_layer`.
@@ -79,6 +80,7 @@
    - Sequential, atomic transaction execution and offline syntax auditing.
 
 ### Corrections Made at L02 Review Checkpoint
+
 1. **Status / Verification Language**:
    - Clarified that L02 is **OFFLINE / DDL VERIFIED** and that **LIVE DATABASE VERIFICATION IS PENDING**. Live PostGIS migration execution will occur once a PostgreSQL container/service is running.
 2. **Analytical Tables Justification**:
@@ -93,15 +95,17 @@
    - Verified that all CHECK constraints strictly derive from the data dictionary and blueprint specifications.
 
 ### Verification Status
-* **Unit & Offline Integration Tests**: 24 passed (14 for L01, 10 for L02).
-* **Live Integration Tests**: 2 skipped (PostgreSQL port 5432 offline on host / Docker unavailable).
-* Total suite execution: 24 passed, 2 skipped in ~3.0s.
+
+- **Unit & Offline Integration Tests**: 24 passed (14 for L01, 10 for L02).
+- **Live Integration Tests**: 2 skipped (PostgreSQL port 5432 offline on host / Docker unavailable).
+- Total suite execution: 24 passed, 2 skipped in ~3.0s.
 
 ---
 
 ## 5. L03 Implementation Details & Verification Summary
 
 ### What Was Implemented
+
 1. **Layer Specification ([docs/layer-specs/L03_gis_processing.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L03_gis_processing.md))**:
    - Complete technical specification covering sections A through W: purpose, inputs, outputs, boundary validation, CRS normalization (`EPSG:32644`), vector processing, raster processing, canonical 30 m grid, alignment contracts, continuous vs categorical resampling policies, DEM slope & aspect derivation, nodata handling, and provenance tracking.
 2. **Canonical 30 m Analysis Grid (`src/spatial/grid.py`)**:
@@ -127,18 +131,23 @@
    - 20 unit tests verifying all 18 specification requirements using isolated, clearly labeled synthetic fixtures.
 
 ### Real Data Availability & Status
-* **Status**: **`FRAMEWORK ONLY — REAL DATA PENDING`**
-* No real GIS datasets or DEMs currently reside in `data/raw/` (only `.gitkeep`).
-* Authoritative government datasets (CartoDEM / Copernicus DEM 30m, Survey of India Chamoli boundary, NRSC LULC) will be ingested via Layer L01 adapters in production.
-* All L03 processing mechanics and contracts are verified using synthetic test fixtures. Zero fabricated datasets were placed in `data/`.
+
+- **Status**: **`FRAMEWORK ONLY — REAL DATA PENDING`**
+- No real GIS datasets or DEMs currently reside in `data/raw/` (only `.gitkeep`).
+- Authoritative government datasets (CartoDEM / Copernicus DEM 30m, Survey of India Chamoli boundary, NRSC LULC) will be ingested via Layer L01 adapters in production.
+- All L03 processing mechanics and contracts are verified using synthetic test fixtures. Zero fabricated datasets were placed in `data/`.
 
 ### Test Suite Summary
-* **Total Tests Passed**: **44 passed, 2 skipped** (14 L01 tests + 10 L02 tests + 20 L03 tests).
-* Total execution time: ~3.3s.
+
+- **Total Tests Passed**: **66 passed, 2 skipped** (14 L01 tests + 10 L02 tests + 20 L03 tests + 22 L04 tests).
+- **Real L04 Data Availability**: No usable boundary, DEM, landslide inventory, LULC, geology, drainage, or roads/infrastructure files are present. `data/raw/`, `data/staging/`, and `data/curated/` contain only `.gitkeep` markers.
+- **L04 Implementation Status**: L04 is implemented as a data-driven baseline engine. Source-specific LULC and lithology mappings are not fabricated; drainage and road distance parameters must be explicitly supplied as dataset/model configuration.
+- **Real L04 Hazard Raster Generated**: **No**. Generation is DATA-PENDING; no geographic values were fabricated.
+- **L04 Limitations**: The deterministic baseline is an uncalibrated susceptibility score, not a probability or prediction. Historical inventory validation is unavailable until a real inventory is ingested.
 
 ---
 
 ## 6. Active Blockers & Decisions Log
 
-* **Active Blockers**: `None`
-* **Architectural Decisions**: `OD-01` through `OD-12` strictly respected.
+- **Active Blockers**: Required authoritative geographic datasets are absent from local data directories; L04 source ingestion is the dependency for real output.
+- **Architectural Decisions**: `OD-01` through `OD-12` strictly respected.
