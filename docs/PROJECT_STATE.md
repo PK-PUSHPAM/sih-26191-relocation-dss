@@ -7,9 +7,9 @@
 ## 1. Current Status Summary
 
 - **Current Layer**: `L11` (Carrying Capacity Engine)
-- **Current Status**: `IMPLEMENTED — VERIFICATION PENDING LOCAL RE-RUN`
-- **Next Task**: L11 full-suite verification, then L12 (Relocation Priority Engine)
-- **Last Verified Commit**: `cdae582` (L10 Relocation Site Suitability Engine)
+- **Current Status**: `VERIFIED — LOCAL FULL SUITE GREEN`
+- **Next Task**: L12 (Relocation Priority Engine) architecture audit and implementation
+- **Last Verified Commit**: `66aafd5` (L11 local full-suite verification)
 - **Active Blockers**: `Authoritative L04-L06 hazard inputs are absent from local data directories`
 
 ---
@@ -56,7 +56,7 @@
 | **L08**  | Red-Zone Engine                  | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L08 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L08_red_zone.md)    | 42/42 Passed                       | `aacf149`       |
 | **L09**  | Exposure & Vulnerability Engine  | **VERIFIED** | [L09 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L09_vulnerability.md) | 25/25 Passed; full suite 190/190 | `3ff399e` |
 | **L10**  | Relocation Site Suitability      | **VERIFIED** | [L10 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L10_site_suitability.md) | 37/37 L10 tests; full suite 227/227 passed, 2 skipped | `cdae582` |
-| **L11**  | Carrying Capacity Engine         | **IMPLEMENTED — VERIFICATION PENDING** | [L11 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L11_carrying_capacity.md) | 17 unit tests; local full suite previously 249 passed, 2 failed, 2 skipped; stale expectations corrected in `6b01747`. Final local verification pending. | `d557411` |
+| **L11**  | Carrying Capacity Engine         | **VERIFIED** | [L11 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L11_carrying_capacity.md) | 17 unit tests; local full suite **251 passed, 2 skipped** | `66aafd5` |
 | **L12**  | Relocation Priority Engine       | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L13**  | Allocation Optimization (CP-SAT) | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L14**  | Update & Recompute Engine        | Queued                                            | Pending                                                                                                                | Pending                            | -               |
