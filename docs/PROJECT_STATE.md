@@ -6,9 +6,9 @@
 
 ## 1. Current Status Summary
 
-- **Current Layer**: `L08` (Red-Zone Engine)
+- **Current Layer**: `L09` (Exposure & Vulnerability Engine)
 - **Current Status**: `FRAMEWORK IMPLEMENTED & VERIFIED (REAL DATA PENDING)`
-- **Next Task**: L09 (Exposure & Vulnerability Engine)
+- **Next Task**: L10 (Relocation Site Suitability)
 - **Last Verified Commit**: `aacf149` (L08 Red-Zone Engine)
 - **Active Blockers**: `Authoritative L04-L06 hazard inputs are absent from local data directories`
 
@@ -54,7 +54,7 @@
 | **L06**  | Rainfall Trigger Index           | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L06 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L06_rainfall_trigger.md)  | 18/18 Passed                       | In progress     |
 | **L07**  | Multi-Hazard Risk Engine         | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L07 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L07_multi_hazard_risk.md) | 29/29 Passed                       | In progress     |
 | **L08**  | Red-Zone Engine                  | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L08 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L08_red_zone.md)    | 42/42 Passed                       | `aacf149`       |
-| **L09**  | Exposure & Vulnerability Engine  | Queued                                            | Pending                                                                                                                | Pending                            | -               |
+| **L09**  | Exposure & Vulnerability Engine  | **IMPLEMENTED — VERIFICATION PENDING** | [L09 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L09_vulnerability.md) | Added unit suite | `L09-vulnerability-1.0` |
 | **L10**  | Relocation Site Suitability      | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L11**  | Carrying Capacity Engine         | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L12**  | Relocation Priority Engine       | Queued                                            | Pending                                                                                                                | Pending                            | -               |
@@ -139,6 +139,14 @@
 - No real GIS datasets or DEMs currently reside in `data/raw/` (only `.gitkeep`).
 - Authoritative government datasets (CartoDEM / Copernicus DEM 30m, Survey of India Chamoli boundary, NRSC LULC) will be ingested via Layer L01 adapters in production.
 - All L03 processing mechanics and contracts are verified using synthetic test fixtures. Zero fabricated datasets were placed in `data/`.
+
+### L09 Implementation Details
+
+- Frozen formula: `V = 0.35P + 0.25S + 0.20A + 0.10I + 0.10D`, sourced from `config/weights.yaml` and the data dictionary.
+- Missing indicators propagate NoData; invalid indicators never produce a valid composite score; missing-data penalty is the sum of missing-indicator weights.
+- Persistence-ready records match the existing `vulnerability` table contract; L09 performs no database writes or migrations.
+- Real authoritative habitation indicator data is not present in the repository, so no real Chamoli vulnerability values are generated.
+- Test execution is pending local/CI verification; no L09 test pass count is claimed.
 
 ### Test Suite Summary
 
