@@ -29,20 +29,21 @@ def test_normalize_chamoli_population_filters_aggregates(monkeypatch, tmp_path):
     assert set(result["source_id"]) == {"census_2011_basic_population_village"}
 
 
-def test_basic_population_data_sheet_selects_only_chamoli_villages(monkeypatch, tmp_path):
+def test_basic_population_data_sheet_selects_chamoli_villages_regardless_of_tru(monkeypatch, tmp_path):
     sheets = {
-        "Data": pd.DataFrame(
+        "EB-0502": pd.DataFrame(
             {
-                "State": ["05", "05", "05", "06"],
-                "District": ["057", "057", "057", "001"],
-                "Subdistt": ["00284", "00284", "00000", "00001"],
-                "Town/Village": ["040808", "040809", "000000", "000001"],
-                "Ward": ["0000", "0000", "0000", "0000"],
-                "Level": ["VILLAGE", "VILLAGE", "DISTRICT", "VILLAGE"],
-                "Name": ["Mana", "Khiron", "Chamoli Total", "Other"],
-                "TRU": ["Total", "Total", "Total", "Total"],
-                "No_HH": ["558", "100", "88964", "10"],
-                "TOT_P": ["1214", "321", "391605", "20"],
+                "State": ["05", "05", "05", "05", "06"],
+                "District": ["057", "057", "057", "057", "001"],
+                "Subdistt": ["00284", "00284", "00000", "00284", "00001"],
+                "Town/Village": ["040808", "040809", "000000", "000000", "000001"],
+                "Ward": ["0000", "0000", "0000", "0000", "0000"],
+                "EB": ["000", "000", "000", "000", "000"],
+                "Level": ["VILLAGE", "VILLAGE", "DISTRICT", "VILLAGE", "VILLAGE"],
+                "Name": ["Mana Rural", "Khiron Rural", "Chamoli Total", "Invalid", "Other"],
+                "TRU": ["Rural", "Rural", "Total", "Rural", "Total"],
+                "No_HH": ["558", "100", "88964", "0", "10"],
+                "TOT_P": ["1214", "90", "391605", "0", "20"],
             }
         )
     }
@@ -54,7 +55,9 @@ def test_basic_population_data_sheet_selects_only_chamoli_villages(monkeypatch, 
         "05 057 00284 040808 0000",
         "05 057 00284 040809 0000",
     ]
-    assert list(result["village_name"]) == ["Mana", "Khiron"]
+    assert list(result["village_name"]) == ["Mana Rural", "Khiron Rural"]
+    assert list(result["population_2011"]) == [1214, 90]
+    assert list(result["households_2011"]) == [558, 100]
 
 
 def test_basic_population_workbook_without_villages_is_rejected(monkeypatch, tmp_path):
