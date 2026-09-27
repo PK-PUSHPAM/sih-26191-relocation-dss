@@ -10,7 +10,7 @@ Official catalog:
 - Geographic granularity: district, sub-district, village, town and ward
 - Relevant fields: village/location code, village name, households and population.
 
-The source is listed in config/sources.yaml as census_2011_chamoli_dchb_b.
+The source is listed in config/sources.yaml as census_2011_basic_population_village.
 
 ## Ingestion behavior
 
@@ -36,6 +36,6 @@ No vulnerability, hazard, priority, suitability or capacity values are fabricate
 
 ## Official references
 
-- Census Chamoli PCA TV catalog: https://censusindia.gov.in/nada/index.php/catalog/6248
+- Census village population catalog: https://censusindia.gov.in/nada/index.php/catalog/42559
 - Census Chamoli District Census Handbook: https://censusindia.gov.in/nada/index.php/catalog/1306
 - Bhuvan developer documentation: https://bhuvan.nrsc.gov.in/wiki/index.php/Information_for_Developers
