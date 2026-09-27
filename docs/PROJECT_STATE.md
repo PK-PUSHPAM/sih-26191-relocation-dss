@@ -6,9 +6,9 @@
 
 ## 1. Current Status Summary
 
-- **Current Layer**: `L10` (Relocation Site Suitability)
-- **Current Status**: `FRAMEWORK IMPLEMENTED & VERIFIED (REAL DATA PENDING)`
-- **Next Task**: L11 (Carrying Capacity Engine)
+- **Current Layer**: `L11` (Carrying Capacity Engine)
+- **Current Status**: `IMPLEMENTED — VERIFICATION PENDING`
+- **Next Task**: L11 full-suite verification, then L12 (Relocation Priority Engine)
 - **Last Verified Commit**: `cdae582` (L10 Relocation Site Suitability Engine)
 - **Active Blockers**: `Authoritative L04-L06 hazard inputs are absent from local data directories`
 
@@ -56,7 +56,7 @@
 | **L08**  | Red-Zone Engine                  | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L08 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L08_red_zone.md)    | 42/42 Passed                       | `aacf149`       |
 | **L09**  | Exposure & Vulnerability Engine  | **VERIFIED** | [L09 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L09_vulnerability.md) | 25/25 Passed; full suite 190/190 | `3ff399e` |
 | **L10**  | Relocation Site Suitability      | **VERIFIED** | [L10 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L10_site_suitability.md) | 37/37 L10 tests; full suite 227/227 passed, 2 skipped | `cdae582` |
-| **L11**  | Carrying Capacity Engine         | Queued                                            | Pending                                                                                                                | Pending                            | -               |
+| **L11**  | Carrying Capacity Engine         | **IMPLEMENTED — VERIFICATION PENDING** | [L11 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L11_carrying_capacity.md) | 17 unit tests added; full suite pending | `d557411` |
 | **L12**  | Relocation Priority Engine       | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L13**  | Allocation Optimization (CP-SAT) | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L14**  | Update & Recompute Engine        | Queued                                            | Pending                                                                                                                | Pending                            | -               |
@@ -158,6 +158,17 @@
 - Persistence-ready records match the existing `vulnerability` table contract; L09 performs no database writes or migrations.
 - Real authoritative habitation indicator data is not present in the repository, so no real Chamoli vulnerability values are generated.
 - Test execution is pending local/CI verification; no L09 test pass count is claimed.
+
+### L11 Implementation Details
+
+- Frozen formula: `Physical_Capacity = min(Cap_land, Cap_water, Cap_sanitation, Cap_health, Cap_access)`; `Effective_Capacity = floor(Physical_Capacity * 0.80)`.
+- Component derivations use the frozen repository configuration: 150 people/hectare for land, 70 L/person/day for water, sanitation factor 1.0, and 1,000 people/bed for health.
+- Sanitation and access capacity are accepted as already-derived people-capacity inputs because the project specification/configuration does not define a further source formula for them; L11 does not invent one.
+- Missing inputs remain NoData/non-evaluable; invalid numeric inputs never become valid capacity.
+- Binding bottleneck is always surfaced for complete records using deterministic order: land → water → sanitation → health → access.
+- Output field names match the existing `capacity` table contract; no database migration or write is performed by L11.
+- L11 is deterministic and carries model/formula/config provenance. It is a modeled decision-support capacity, not engineering certification or a legal occupancy limit.
+- Commit: `d557411`.
 
 ### Test Suite Summary
 
