@@ -59,3 +59,11 @@ def test_cors_allows_local_dashboard_origin():
     )
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
+
+
+def test_hazards_endpoint_matches_hazard_layer_schema():
+    client = TestClient(app)
+    response = client.get("/api/v1/hazards")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["items"] == []
