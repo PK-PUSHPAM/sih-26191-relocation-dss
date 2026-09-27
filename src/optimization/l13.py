@@ -6,6 +6,7 @@ parameters. It performs no database writes.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 from typing import Any, Mapping, Sequence
 
 
@@ -75,6 +76,7 @@ def _valid_nonnegative_number(value: Any) -> bool:
     return (
         isinstance(value, (int, float))
         and not isinstance(value, bool)
+        and math.isfinite(float(value))
         and float(value) >= 0.0
     )
 
@@ -83,6 +85,16 @@ def _valid_hazard(value: Any) -> bool:
     return (
         isinstance(value, (int, float))
         and not isinstance(value, bool)
+        and math.isfinite(float(value))
+        and 0.0 <= float(value) <= 1.0
+    )
+
+
+def _valid_suitability(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
         and 0.0 <= float(value) <= 1.0
     )
 
@@ -115,6 +127,7 @@ def _validate_inputs(
         if not _valid_nonnegative_int(h.exposed_population):
             raise L13Error("exposed_population must be a non-negative integer")
 
+    h_id_set = set(h_ids)
     for s in sites:
         if not s.site_id:
             raise L13Error("site_id is required")
@@ -122,12 +135,18 @@ def _validate_inputs(
             raise L13Error("effective_capacity must be a non-negative integer")
         if not _valid_hazard(s.hazard):
             raise L13Error("site hazard must be within [0,1]")
-        if s.suitability is not None and not (
-            isinstance(s.suitability, (int, float))
-            and not isinstance(s.suitability, bool)
-            and 0.0 <= float(s.suitability) <= 1.0
-        ):
+        if s.suitability is not None and not _valid_suitability(s.suitability):
             raise L13Error("site suitability must be within [0,1]")
+        unknown_feasible = [
+            habitation_id
+            for habitation_id in s.feasible_habitations
+            if habitation_id not in h_id_set
+        ]
+        if unknown_feasible:
+            raise L13Error(
+                "feasible_habitations references unknown habitation_id: "
+                + str(unknown_feasible[0])
+            )
 
     for pair, distance in distances.items():
         if pair[0] not in h_ids or pair[1] not in s_ids:
@@ -162,8 +181,16 @@ def run_l13(
         habitations, sites, distances,
         distance_weight, unmet_penalty, hazard_weight,
     )
-    if time_limit_seconds <= 0 or num_workers <= 0:
-        raise L13Error("solver limits must be positive")
+    if (
+        isinstance(time_limit_seconds, bool)
+        or not isinstance(time_limit_seconds, (int, float))
+        or not math.isfinite(float(time_limit_seconds))
+        or float(time_limit_seconds) <= 0
+        or isinstance(num_workers, bool)
+        or not isinstance(num_workers, int)
+        or num_workers <= 0
+    ):
+        raise L13Error("solver limits must be positive finite values")
 
     try:
         from ortools.sat.python import cp_model
