@@ -23,16 +23,18 @@ import pandas as pd
 STATE_LGD = "05"
 DISTRICT_LGD = "057"
 TARGET_CRS = "EPSG:32644"
-REQUIRED_SOI_COLUMNS = {
-    "STATE_LGD",
-    "Dist_LGD",
-    "District",
-    "Sub_dist",
-    "Vill_name",
-    "Vill_Cat",
-    "Vill_LGD",
-    "geometry",
+# SOI boundary files can expose LGD fields with different casing/aliases.
+SOI_COLUMN_ALIASES = {
+    "STATE_LGD": {"STATE_LGD", "state_lgd"},
+    "Dist_LGD": {"Dist_LGD", "DIST_LGD", "dist_lgd"},
+    "District": {"District", "DISTRICT", "district"},
+    "Sub_dist": {"Sub_dist", "SUB_DIST", "sub_dist", "SUBDT_LGD", "subdt_lgd"},
+    "Vill_name": {"Vill_name", "VILL_NAME", "vill_name", "VILNAME11", "vilname11"},
+    "Vill_Cat": {"Vill_Cat", "VILL_CAT", "vill_cat"},
+    "Vill_LGD": {"Vill_LGD", "VILL_LGD", "vil_lgd"},
+    "geometry": {"geometry", "shape"},
 }
+REQUIRED_SOI_COLUMNS = set(SOI_COLUMN_ALIASES)
 REQUIRED_CENSUS_COLUMNS = {
     "location_code",
     "village_name",
@@ -52,8 +54,24 @@ def _village_code(location_code: object) -> str:
     return match.group(1)
 
 
+def _normalize_soi_columns(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    rename_map = {}
+    columns = set(gdf.columns)
+    for canonical, aliases in SOI_COLUMN_ALIASES.items():
+        if canonical in columns:
+            continue
+        matches = [name for name in aliases if name in columns]
+        if len(matches) == 1:
+            rename_map[matches[0]] = canonical
+        elif len(matches) > 1:
+            raise ValueError(
+                f"SOI boundary file contains multiple aliases for {canonical}: {matches}"
+            )
+    return gdf.rename(columns=rename_map)
+
+
 def load_soi_rural_boundaries(shapefile: Path) -> gpd.GeoDataFrame:
-    gdf = gpd.read_file(shapefile)
+    gdf = _normalize_soi_columns(gpd.read_file(shapefile))
 
     missing = REQUIRED_SOI_COLUMNS - set(gdf.columns)
     if missing:
