@@ -1,4 +1,22 @@
+"""Layer 11: Carrying Capacity Engine.
+
+Deterministic bottleneck-based modeled capacity for candidate relocation sites.
 """
-Layer 11: Carrying Capacity Engine Module
-Bottleneck-based effective carrying capacity across physical, water, health, and safety.
-"""
+
+from .l11 import (
+    CapacityQuality,
+    CapacityRecord,
+    CapacitySiteInput,
+    L11Error,
+    L11Result,
+    run_l11,
+)
+
+__all__ = [
+    "CapacityQuality",
+    "CapacityRecord",
+    "CapacitySiteInput",
+    "L11Error",
+    "L11Result",
+    "run_l11",
+]
