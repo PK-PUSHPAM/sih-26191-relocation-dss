@@ -139,6 +139,8 @@ def normalize_chamoli_population(xlsx: Path) -> pd.DataFrame:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", default=SOURCE_URL)
+    parser.add_argument("--file", type=Path, help="Use an already-downloaded official Census Excel file.")
+    parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--raw-dir", type=Path, default=Path("data/raw"))
     parser.add_argument("--curated-dir", type=Path, default=Path("data/curated"))
     args = parser.parse_args()
@@ -147,14 +149,28 @@ def main() -> int:
     args.curated_dir.mkdir(parents=True, exist_ok=True)
 
     raw_path = args.raw_dir / "2011-IndiaStateDistSbDistTwn-0000.xlsx"
-    print(f"Downloading official Census source: {args.url}")
-    try:
-        urllib.request.urlretrieve(args.url, raw_path)
-    except Exception as exc:
-        raise SystemExit(
-            "Census download failed. Use --url with the current download link "
-            "shown on the official Census catalog page."
-        ) from exc
+    if args.file:
+        if not args.file.is_file():
+            raise SystemExit(f"Census Excel file not found: {args.file}")
+        raw_path.write_bytes(args.file.read_bytes())
+        print(f"Using downloaded Census source: {args.file}")
+    else:
+        print(f"Downloading official Census source: {args.url}")
+        request = urllib.request.Request(args.url, headers={"User-Agent": "Mozilla/5.0 (compatible; SIH-26191 data ingestion)"})
+        try:
+            with urllib.request.urlopen(request, timeout=args.timeout) as response, raw_path.open("wb") as out:
+                while True:
+                    chunk = response.read(1024 * 1024)
+                    if not chunk:
+                        break
+                    out.write(chunk)
+        except Exception as exc:
+            if raw_path.exists():
+                raw_path.unlink()
+            raise SystemExit(
+                "Census download failed. Download the official Excel file manually "
+                "and rerun with --file. Catalog: https://censusindia.gov.in/nada/index.php/catalog/42559"
+            ) from exc
 
     checksum = sha256(raw_path)
     curated = normalize_chamoli_population(raw_path)
