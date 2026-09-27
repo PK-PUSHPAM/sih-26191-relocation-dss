@@ -38,7 +38,7 @@ relocation_priority_tiers:
 
 # Carrying Capacity & Bottleneck Rules (Section 8)
 carrying_capacity:
-  default_safety_factor: 0.80  # effective_capacity = floor(min(land, water, sanitation, health, access) * safety_factor)
+  default_safety_factor: 0.80 # effective_capacity = floor(min(land, water, sanitation, health, access) * safety_factor)
   target_density_per_hectare: 150 # Modeling proxy for mountainous terrain
   daily_water_liters_per_capita: 70 # Mountainous rural standard proxy
   sanitation_service_factor: 1.0
@@ -49,3 +49,13 @@ candidate_site_generation:
   min_contiguous_area_hectares: 1.0
   max_allowable_slope_degrees: 30.0
   max_road_distance_meters: 2000.0
+
+# L06 Rainfall Trigger
+# No scientifically validated rainfall threshold is currently established.
+# A caller must provide an explicitly marked prototype parameter at evaluation time.
+rainfall_trigger:
+  threshold_mm: null
+  metric: "window_total_mm"
+  comparison: "greater_equal"
+  rule_version: "L06-trigger-1.0"
+  parameter_status: "UNVALIDATED_PROTOTYPE_CONFIGURATION_REQUIRED"

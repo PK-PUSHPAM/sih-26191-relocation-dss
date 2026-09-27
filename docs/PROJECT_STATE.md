@@ -6,11 +6,11 @@
 
 ## 1. Current Status Summary
 
-- **Current Layer**: `L05` (Flood / Flash-Flood Baseline Hazard Model)
+- **Current Layer**: `L06` (Rainfall Trigger)
 - **Current Status**: `FRAMEWORK IMPLEMENTED & VERIFIED (REAL DATA PENDING)`
-- **Next Task**: L05 real-data readiness and riverine/flash-flood source validation
-- **Last Verified Commit**: `7ba343f` (L02 database foundation)
-- **Active Blockers**: `Required authoritative flood datasets are absent from local data directories`
+- **Next Task**: L06 real-data/provider validation
+- **Last Verified Commit**: `e008e0b` (L05 flood hazard baseline)
+- **Active Blockers**: `No local rainfall data or verified operational rainfall provider is available`
 
 ---
 
@@ -37,6 +37,7 @@
 - [x] L03 Unit Test Suite Verified with Isolated Synthetic Fixtures (20/20 passed)
 - [x] L04 Landslide Baseline Engine Implemented and Verified (22/22 focused tests; real data pending)
 - [x] L05 Flood Baseline Engine Implemented and Verified (10/10 focused tests; real data pending; flash-flood scoring unsupported)
+- [x] L06 Rainfall Trigger Framework Implemented and Verified (18/18 focused tests; real rainfall data pending; no operational provider)
 
 ---
 
@@ -49,7 +50,7 @@
 | **L03**  | GIS Processing & Common Grid     | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L03 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L03_gis_processing.md)   | 20/20 Passed                       | In progress     |
 | **L04**  | Landslide Baseline               | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L04 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L04_landslide_hazard.md) | 22/22 Passed                       | In progress     |
 | **L05**  | Flood / Flash Flood Baseline     | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L05 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L05_flood_hazard.md)     | 10/10 Passed                       | In progress     |
-| **L06**  | Rainfall Trigger Index           | Queued                                            | Pending                                                                                                               | Pending                            | -               |
+| **L06**  | Rainfall Trigger Index           | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L06 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L06_rainfall_trigger.md) | 18/18 Passed                       | In progress     |
 | **L07**  | Multi-Hazard Risk Engine         | Queued                                            | Pending                                                                                                               | Pending                            | -               |
 | **L08**  | Red-Zone Engine                  | Queued                                            | Pending                                                                                                               | Pending                            | -               |
 | **L09**  | Exposure & Vulnerability Engine  | Queued                                            | Pending                                                                                                               | Pending                            | -               |
@@ -140,7 +141,7 @@
 
 ### Test Suite Summary
 
-- **Total Tests Passed**: **76 passed, 2 skipped** (14 L01 tests + 10 L02 tests + 20 L03 tests + 22 L04 tests + 10 L05 tests).
+- **Total Tests Passed**: **94 passed, 2 skipped** (14 L01 tests + 10 L02 tests + 20 L03 tests + 22 L04 tests + 10 L05 tests + 18 L06 tests).
 - **Real L04 Data Availability**: No usable boundary, DEM, landslide inventory, LULC, geology, drainage, or roads/infrastructure files are present. `data/raw/`, `data/staging/`, and `data/curated/` contain only `.gitkeep` markers.
 - **L04 Implementation Status**: L04 is implemented as a data-driven baseline engine. Source-specific LULC and lithology mappings are not fabricated; drainage and road distance parameters must be explicitly supplied as dataset/model configuration.
 - **Real L04 Hazard Raster Generated**: **No**. Generation is DATA-PENDING; no geographic values were fabricated.
@@ -149,10 +150,14 @@
 - **Real L05 Flood Hazard Raster Generated**: **No**. Actual Chamoli flood-hazard generation remains DATA-PENDING.
 - **L05 Support Status**: River-proximity evidence and optional observed-extent evidence are implemented. Flash-flood scoring is explicitly unsupported pending real hydrological/event data.
 - **L05 Limitations**: The baseline is not hydraulic simulation, flood probability, return-period analysis, depth/velocity modelling, or official flood certification.
+- **Real L06 Rainfall Data Availability**: No rainfall observation files are present. The documented NWIC/IMD source is partially verified in the registry, but no live provider or operational feed exists in the repository.
+- **Real L06 Trigger Output Generated**: **No**. No real rainfall trigger grid was generated.
+- **L06 Threshold Status**: No scientifically validated rainfall threshold is configured. `threshold_mm` is explicitly null; callers must provide an unvalidated prototype/configuration parameter.
+- **L06 Limitations**: Local/test provider input is non-operational; no interpolation, forecast, calibration, warning validation, or real-time claim is supported. Completeness uses only caller-supplied expected observation counts; cadence/gap detection is not implemented. Grid evaluation requires the L03 EPSG:32644, 30 m, unrotated canonical grid and reports states for observed cells only; unobserved cells remain NoData.
 
 ---
 
 ## 6. Active Blockers & Decisions Log
 
-- **Active Blockers**: Required authoritative geographic datasets are absent from local data directories; L05 source ingestion is the dependency for real output and flash-flood extension.
+- **Active Blockers**: No local rainfall data or verified operational rainfall provider is available; authoritative rainfall threshold validation is also pending.
 - **Architectural Decisions**: `OD-01` through `OD-12` strictly respected.

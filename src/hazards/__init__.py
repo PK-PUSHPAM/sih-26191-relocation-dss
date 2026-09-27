@@ -20,6 +20,31 @@ from .flood import (
 	write_flood_hazard_raster,
 )
 
+from .rainfall import (
+	DuplicateObservationError,
+	LocalCsvRainfallProvider,
+	MissingTimestampError,
+	InvalidTimestampError,
+	InvalidRainfallError,
+	RainfallEvaluationState,
+	RainfallGridResult,
+	RainfallModelError,
+	RainfallObservation,
+	RainfallProvider,
+	RainfallProviderResult,
+	RainfallProvenance,
+	RainfallRule,
+	RainfallTriggerResult,
+	RainfallValidationError,
+	UnavailableRainfallProvider,
+	build_rainfall_provenance,
+	evaluate_rainfall_grid,
+	evaluate_rainfall_window,
+	evaluate_provider_result,
+	validate_canonical_grid,
+	validate_cell_id,
+)
+
 from .landslide import (
 	InventoryValidationResult,
 	InventoryEvidenceResult,
@@ -46,6 +71,12 @@ from .landslide import (
 )
 
 __all__ = [
+	"DuplicateObservationError", "LocalCsvRainfallProvider", "RainfallEvaluationState", "RainfallGridResult",
+	"MissingTimestampError", "InvalidTimestampError", "InvalidRainfallError",
+	"RainfallModelError", "RainfallObservation", "RainfallProvider", "RainfallProviderResult",
+	"RainfallProvenance", "RainfallRule", "RainfallTriggerResult", "RainfallValidationError",
+	"UnavailableRainfallProvider", "build_rainfall_provenance", "evaluate_rainfall_grid",
+	"evaluate_rainfall_window", "evaluate_provider_result", "validate_canonical_grid", "validate_cell_id",
 	"FloodBaselineResult", "FloodDataPendingError", "FloodInventoryEvidenceResult", "FloodModelError",
 	"HydrologicalValidationResult", "audit_l05_data_readiness", "build_flood_provenance",
 	"compute_flood_baseline", "flood_proximity_factor", "normalize_flood_factor",
