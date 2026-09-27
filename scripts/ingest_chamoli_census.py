@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import re
-import urllib.request
 from pathlib import Path
 
 import pandas as pd
@@ -52,7 +51,6 @@ def find_village_frame(sheets: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
         cols = {norm(c) for c in df.columns}
 
-        # Dedicated PCA-TV exports: Location Code / Area Name / population / households.
         if (
             any("location_code" in c for c in cols)
             and any("area_name" in c for c in cols)
@@ -61,26 +59,24 @@ def find_village_frame(sheets: dict[str, pd.DataFrame]) -> pd.DataFrame:
         ):
             candidates.append(("pca_tv", sheet_name, df))
 
-        # The national Basic Population workbook has a Data sheet with
-        # State/District/Subdistt/Town-Village/Level fields. It is not itself
-        # a village-only export; village rows must be explicitly selected.
-        elif (
-            any(norm(c) == "state" for c in df.columns)
-            and any(norm(c) == "district" for c in df.columns)
-            and any(norm(c) == "subdistt" for c in df.columns)
-            and any(norm(c) == "town_village" for c in df.columns)
-            and any(norm(c) == "level" for c in df.columns)
-            and any(norm(c) == "name" for c in df.columns)
-            and any(norm(c) == "no_hh" for c in df.columns)
-            and any(norm(c) == "tot_p" for c in df.columns)
-        ):
+        elif {
+            "state",
+            "district",
+            "subdistt",
+            "town_village",
+            "ward",
+            "level",
+            "name",
+            "no_hh",
+            "tot_p",
+        }.issubset(cols):
             candidates.append(("basic_population", sheet_name, df))
 
     if not candidates:
         raise ValueError(
             "Could not identify a supported Census PCA-TV workbook structure. "
             "Expected either a PCA-TV export with Location Code/Area Name columns "
-            "or the Basic Population Data sheet."
+            "or the Basic Population/EB export."
         )
 
     candidates.sort(key=lambda item: (0 if item[0] == "pca_tv" else 1, item[1]))
@@ -123,10 +119,9 @@ def normalize_chamoli_population(xlsx: Path) -> pd.DataFrame:
             & ~compact_code.str.endswith("0000000000")
         ].copy()
 
-        # PCA-TV exports can contain district/sub-district/town aggregate rows.
         out = out[
             ~out["village_name"].str.contains(
-                r"\b(district|sub[- ]district|total|urban|rural|ward)\b",
+                r"\b(district|sub[- ]district|total|urban|ward)\b",
                 case=False,
                 na=False,
             )
@@ -143,9 +138,8 @@ def normalize_chamoli_population(xlsx: Path) -> pd.DataFrame:
         district = df[col("district")].astype(str).str.strip().str.zfill(3)
         subdistt = df[col("subdistt")].astype(str).str.strip().str.zfill(5)
         town_village = df[col("town_village")].astype(str).str.strip().str.zfill(6)
+        ward = df[col("ward")].astype(str).str.strip().str.zfill(4)
         level = df[col("level")].astype(str).str.strip().str.upper()
-        name = df[col("name")].astype(str).str.strip()
-        tru = df[find_column(df.columns, "tru")].astype(str).str.strip().str.upper() if find_column(df.columns, "tru") else None
 
         village_mask = (
             state.eq(STATE_CODE)
@@ -153,18 +147,14 @@ def normalize_chamoli_population(xlsx: Path) -> pd.DataFrame:
             & level.eq("VILLAGE")
             & town_village.ne("000000")
         )
-        if tru is not None:
-            total_mask = tru.eq("TOTAL")
-            if total_mask.any():
-                village_mask &= total_mask
 
         selected = df.loc[village_mask].copy()
         if selected.empty:
             raise ValueError(
-                "The supplied Census Basic Population workbook contains no Chamoli "
-                "village-level records. It is a district/sub-district/town extract "
-                "for this release. Use the official Chamoli PCA-TV workbook from "
-                "catalog 6248 instead."
+                "The supplied Census workbook contains no Chamoli village-level records. "
+                "The workbook structure was recognized, but its village rows could not "
+                "be selected using State=05, District=057, Level=VILLAGE, and a non-zero "
+                "Town/Village code."
             )
 
         out = pd.DataFrame(
@@ -178,17 +168,9 @@ def normalize_chamoli_population(xlsx: Path) -> pd.DataFrame:
                     + " "
                     + town_village.loc[selected.index]
                     + " "
-                    + selected[col("ward")].astype(str).str.strip().str.zfill(4)
-                    if "ward" in {norm(c) for c in df.columns}
-                    else state.loc[selected.index]
-                    + " "
-                    + district.loc[selected.index]
-                    + " "
-                    + subdistt.loc[selected.index]
-                    + " "
-                    + town_village.loc[selected.index]
+                    + ward.loc[selected.index]
                 ),
-                "village_name": name.loc[selected.index],
+                "village_name": selected[col("name")].astype(str).str.strip(),
                 "population_2011": pd.to_numeric(selected[col("tot_p")], errors="coerce"),
                 "households_2011": pd.to_numeric(selected[col("no_hh")], errors="coerce"),
             }
