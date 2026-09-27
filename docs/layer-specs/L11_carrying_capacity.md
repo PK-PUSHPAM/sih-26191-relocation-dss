@@ -1,6 +1,6 @@
 # L11 — Carrying Capacity Engine
 
-**Status:** IMPLEMENTED — verification pending full repository test run  
+**Status:** IMPLEMENTED — verification pending local full-suite verification  
 **Model:** `L11-carrying-capacity-1.0`  
 **Formula:** `CC-floor-min-0.80`
 
@@ -24,7 +24,7 @@ The repository configuration freezes these prototype parameters:
 - Land: `floor(area_m2 / 10,000 * 150 people/hectare)`
 - Water: `floor(daily_water_liters / 70 L/person/day)`
 - Sanitation: `floor(sanitation_capacity * 1.0)`
-- Health: `floor(health_beds * 1000 people/bed * 0.12)`
+- Health: `floor(health_beds * 1000 people/bed)`
 - Access: `floor(access_capacity)`
 
 The master specification requires service/infrastructure constraints where data permit, but it does not define a further scientific derivation for sanitation or access capacity. Therefore L11 accepts those two as already-derived people-capacity inputs rather than inventing a new proxy.
