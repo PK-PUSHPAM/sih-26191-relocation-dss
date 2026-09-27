@@ -7,7 +7,7 @@
 ## 1. Current Status Summary
 
 - **Current Layer**: `L11` (Carrying Capacity Engine)
-- **Current Status**: `IMPLEMENTED — VERIFICATION PENDING`
+- **Current Status**: `IMPLEMENTED — VERIFICATION PENDING (health derivation corrected after local test)`
 - **Next Task**: L11 full-suite verification, then L12 (Relocation Priority Engine)
 - **Last Verified Commit**: `cdae582` (L10 Relocation Site Suitability Engine)
 - **Active Blockers**: `Authoritative L04-L06 hazard inputs are absent from local data directories`
@@ -56,7 +56,7 @@
 | **L08**  | Red-Zone Engine                  | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L08 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L08_red_zone.md)    | 42/42 Passed                       | `aacf149`       |
 | **L09**  | Exposure & Vulnerability Engine  | **VERIFIED** | [L09 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L09_vulnerability.md) | 25/25 Passed; full suite 190/190 | `3ff399e` |
 | **L10**  | Relocation Site Suitability      | **VERIFIED** | [L10 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L10_site_suitability.md) | 37/37 L10 tests; full suite 227/227 passed, 2 skipped | `cdae582` |
-| **L11**  | Carrying Capacity Engine         | **IMPLEMENTED — VERIFICATION PENDING** | [L11 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L11_carrying_capacity.md) | 17 unit tests added; full suite pending | `d557411` |
+| **L11**  | Carrying Capacity Engine         | **IMPLEMENTED — VERIFICATION PENDING** | [L11 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L11_carrying_capacity.md) | 17 unit tests added; local full suite reported 250 passed, 1 failed, 2 skipped; failure corrected | `d557411` |
 | **L12**  | Relocation Priority Engine       | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L13**  | Allocation Optimization (CP-SAT) | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L14**  | Update & Recompute Engine        | Queued                                            | Pending                                                                                                                | Pending                            | -               |
@@ -168,7 +168,7 @@
 - Binding bottleneck is always surfaced for complete records using deterministic order: land → water → sanitation → health → access.
 - Output field names match the existing `capacity` table contract; no database migration or write is performed by L11.
 - L11 is deterministic and carries model/formula/config provenance. It is a modeled decision-support capacity, not engineering certification or a legal occupancy limit.
-- Commit: `d557411`.
+- Implementation lineage: `d557411`; health correction commits: `2a7fb67`, `9a9b82d`, `0c90340`.
 
 ### Test Suite Summary
 
