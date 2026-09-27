@@ -211,6 +211,16 @@ def run_l10(
             ))
             continue
 
+        try:
+            combined_risk = _validate_score("combined_risk", candidate.combined_risk)
+        except L10Error as exc:
+            records.append(SiteSuitabilityRecord(
+                candidate.site_id, candidate.geometry, round(area_m2, 2), None,
+                SiteStatus.REJECTED, SiteQuality.INVALID,
+                {"exclusion_reasons": [], "invalid_input": str(exc)},
+            ))
+            continue
+
         required_constraints = []
         if slope_degrees is None:
             required_constraints.append("slope_degrees")
