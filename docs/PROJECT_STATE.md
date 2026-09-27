@@ -6,10 +6,10 @@
 
 ## 1. Current Status Summary
 
-- **Current Layer**: `L09` (Exposure & Vulnerability Engine)
+- **Current Layer**: `L10` (Relocation Site Suitability)
 - **Current Status**: `FRAMEWORK IMPLEMENTED & VERIFIED (REAL DATA PENDING)`
-- **Next Task**: L10 (Relocation Site Suitability)
-- **Last Verified Commit**: `aacf149` (L08 Red-Zone Engine)
+- **Next Task**: L11 (Carrying Capacity Engine)
+- **Last Verified Commit**: `3ff399e` (L09 Exposure & Vulnerability Engine)
 - **Active Blockers**: `Authoritative L04-L06 hazard inputs are absent from local data directories`
 
 ---
@@ -54,8 +54,8 @@
 | **L06**  | Rainfall Trigger Index           | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L06 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L06_rainfall_trigger.md)  | 18/18 Passed                       | In progress     |
 | **L07**  | Multi-Hazard Risk Engine         | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L07 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L07_multi_hazard_risk.md) | 29/29 Passed                       | In progress     |
 | **L08**  | Red-Zone Engine                  | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L08 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L08_red_zone.md)    | 42/42 Passed                       | `aacf149`       |
-| **L09**  | Exposure & Vulnerability Engine  | **IMPLEMENTED — VERIFICATION PENDING** | [L09 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L09_vulnerability.md) | Added unit suite | `L09-vulnerability-1.0` |
-| **L10**  | Relocation Site Suitability      | Queued                                            | Pending                                                                                                                | Pending                            | -               |
+| **L09**  | Exposure & Vulnerability Engine  | **VERIFIED** | [L09 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L09_vulnerability.md) | 25/25 Passed; full suite 190/190 | `3ff399e` |
+| **L10**  | Relocation Site Suitability      | **IMPLEMENTED — VERIFICATION PENDING** | [L10 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L10_site_suitability.md) | Added unit suite | `L10-site-suitability-1.0` |
 | **L11**  | Carrying Capacity Engine         | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L12**  | Relocation Priority Engine       | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L13**  | Allocation Optimization (CP-SAT) | Queued                                            | Pending                                                                                                                | Pending                            | -               |
@@ -140,6 +140,17 @@
 - Authoritative government datasets (CartoDEM / Copernicus DEM 30m, Survey of India Chamoli boundary, NRSC LULC) will be ingested via Layer L01 adapters in production.
 - All L03 processing mechanics and contracts are verified using synthetic test fixtures. Zero fabricated datasets were placed in `data/`.
 
+### L10 Implementation Details
+
+- Frozen suitability formula: S = 0.30Hsafe + 0.15Slope + 0.15Road + 0.15Water + 0.10Health + 0.05Education + 0.05LandUse + 0.05Services.
+- Hsafe is exactly 1.0 - L07 combined risk H after hard exclusions.
+- Hard constraints: L08 red zone, water body, protected land, area below 1.0 ha, slope above 30 degrees, or road distance above 2,000 m reject a candidate before scoring.
+- Missing required inputs never become zero; candidates with missing evaluability inputs are conditional with NoData suitability.
+- Invalid numeric inputs never become a valid score; they are rejected with quality state invalid.
+- L10 accepts candidate polygons and already-derived normalized suitability indicators; it does not fabricate source data or invent normalization functions.
+- L10 performs no database writes, migrations, APIs, carrying-capacity calculation, priority calculation, or optimization.
+- Local full-suite verification is pending for the L10 implementation.
+
 ### L09 Implementation Details
 
 - Frozen formula: `V = 0.35P + 0.25S + 0.20A + 0.10I + 0.10D`, sourced from `config/weights.yaml` and the data dictionary.
@@ -150,7 +161,7 @@
 
 ### Test Suite Summary
 
-- **Total Tests Passed**: **165 passed, 2 skipped** (14 L01 tests + 10 L02 tests + 20 L03 tests + 22 L04 tests + 10 L05 tests + 18 L06 tests + 29 L07 tests + 42 L08 tests).
+- **Last verified full-suite result before L10**: **190 passed, 2 skipped** (L01-L09; L09 contributes 25 tests). L10 verification is pending.
 - **Real L04 Data Availability**: No usable boundary, DEM, landslide inventory, LULC, geology, drainage, or roads/infrastructure files are present. `data/raw/`, `data/staging/`, and `data/curated/` contain only `.gitkeep` markers.
 - **L04 Implementation Status**: L04 is implemented as a data-driven baseline engine. Source-specific LULC and lithology mappings are not fabricated; drainage and road distance parameters must be explicitly supplied as dataset/model configuration.
 - **Real L04 Hazard Raster Generated**: **No**. Generation is DATA-PENDING; no geographic values were fabricated.
