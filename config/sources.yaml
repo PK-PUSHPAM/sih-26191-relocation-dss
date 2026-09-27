@@ -53,6 +53,24 @@ sources:
     fallback_source: null
     notes: "Official Chamoli PCA-TV village-level population and household baseline. Geometry must be joined from a separately verified spatial source."
 
+  - source_id: "survey_of_india_uttarakhand_village_boundaries"
+    name: "Village Boundary Database - Uttarakhand"
+    authority: "Survey of India"
+    category: "administrative_boundaries"
+    official_url: "https://surveyofindia.gov.in/pages/village-boundary-data-base-of-entire-india"
+    access_method: "Official download"
+    expected_format: "Shapefile / GeoDatabase"
+    expected_geometry: "MultiPolygon"
+    expected_crs: "Source CRS preserved; reprojected to EPSG:32644 for analysis"
+    spatial_scope: "Chamoli District, Uttarakhand"
+    temporal_scope: "Current official village boundary database"
+    update_frequency: "Periodic"
+    authentication_required: false
+    verification_status: "VERIFIED_FILE"
+    license: "Government Open Publication"
+    fallback_source: null
+    notes: "Village boundaries are matched to Census records only by Vill_LGD / Town-Village code. No name matching or geometry invention."
+
   - source_id: "census_2011_chamoli_dchb_a"
     name: "Chamoli District Census Handbook (DCHB) - Village & Town Directory (Part A)"
     authority: "Census India / Office of the Registrar General & Census Commissioner"
