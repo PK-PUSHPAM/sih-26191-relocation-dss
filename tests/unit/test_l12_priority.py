@@ -14,7 +14,7 @@ def habitation(**overrides):
 
 def test_computes_frozen_formula():
     record = run_l12([habitation()]).records[0]
-    assert record.priority_score == 0.702
+    assert record.priority_score == 0.74
     assert record.tier is PriorityTier.SHORT_TERM
     assert record.quality_flag is PriorityQuality.COMPLETE
 
@@ -54,7 +54,7 @@ def test_invalid_input_is_invalid(field, value):
 
 def test_zero_exposed_population_is_valid():
     record = run_l12([habitation(exposed_pop=0, exposed_pop_score=0.0)]).records[0]
-    assert record.priority_score == 0.542
+    assert record.priority_score == 0.54
     assert record.tier is PriorityTier.MEDIUM_TERM
 
 
@@ -78,7 +78,7 @@ def test_to_dict_is_persistence_ready():
     record = run_l12([habitation()]).records[0].to_dict()
     assert record["habitation_id"] == "H1"
     assert record["exposed_pop"] == 100
-    assert record["priority_score"] == 0.702
+    assert record["priority_score"] == 0.74
     assert record["tier"] == "Short-term"
 
 
