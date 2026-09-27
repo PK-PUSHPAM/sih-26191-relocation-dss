@@ -73,6 +73,13 @@ def test_hard_exclusions_reject_before_scoring(flag):
     assert record.suitability is None
     assert flag in record.explanation["exclusion_reasons"]
 
+def test_hard_exclusion_precedes_invalid_scoring_input():
+    result = run_l10([make_candidate(red_zone=True, combined_risk=np.nan)])
+    record = result.records[0]
+    assert record.status is SiteStatus.REJECTED
+    assert record.quality_flag is SiteQuality.COMPLETE
+    assert "red_zone" in record.explanation["exclusion_reasons"]
+
 def test_area_below_one_hectare_rejected():
     result = run_l10([make_candidate(geometry=square(99.9))])
     record = result.records[0]
