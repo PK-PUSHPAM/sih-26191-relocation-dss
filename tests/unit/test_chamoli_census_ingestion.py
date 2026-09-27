@@ -29,7 +29,7 @@ def test_normalize_chamoli_population_filters_aggregates(monkeypatch, tmp_path):
     assert set(result["source_id"]) == {"census_2011_basic_population_village"}
 
 
-def test_basic_population_data_sheet_selects_chamoli_villages_regardless_of_tru(monkeypatch, tmp_path):
+def test_basic_population_eb_export_selects_chamoli_villages_regardless_of_tru(monkeypatch, tmp_path):
     sheets = {
         "EB-0502": pd.DataFrame(
             {
