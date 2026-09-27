@@ -14,7 +14,6 @@ Implemented endpoints:
 - `GET /api/v1/hazards`
 - `GET /api/v1/risk/map`
 - `GET /api/v1/sites`
-- `GET /api/v1/sites/{habitation_id}`
 - `GET /api/v1/sites/{site_id}/capacity`
 - `GET /api/v1/priorities`
 - `POST /api/v1/optimize`
@@ -38,3 +37,11 @@ The endpoint set follows the L15 API architecture documented in `docs/ARCHITECTU
 - Database connectivity/errors are not converted to fabricated empty analytical results.
 - Invalid optimization payloads return HTTP 422.
 - Missing distance for a declared feasible pair is rejected by L13 and surfaced as HTTP 422.
+
+## Verification acceptance
+
+- FastAPI app imports successfully.
+- OpenAPI exposes all frozen L15 routes.
+- Health endpoint returns service status.
+- Invalid optimization payload shape is rejected.
+- Full project suite must be rerun with FastAPI installed; otherwise L15 tests are skipped and L15 is not considered verified.
