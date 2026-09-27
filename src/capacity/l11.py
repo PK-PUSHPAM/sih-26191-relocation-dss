@@ -163,7 +163,7 @@ def _derive_capacities(site: CapacitySiteInput) -> Dict[str, int]:
     land_cap = floor((area_m2 / 10_000.0) * TARGET_DENSITY_PER_HECTARE)
     water_cap = floor(water_liters / DAILY_WATER_LITERS_PER_CAPITA)
     sanitation_cap = floor(sanitation * SANITATION_SERVICE_FACTOR)
-    health_cap = floor(beds * (HEALTHCARE_PERSON_PER_BED * 0.12))
+    health_cap = floor(beds * HEALTHCARE_PERSON_PER_BED)
     access_cap = floor(access)
 
     return {
@@ -283,7 +283,7 @@ def run_l11(
                         "land": "floor(area_m2 / 10000 * 150 people/ha)",
                         "water": "floor(daily_water_liters / 70 L/person/day)",
                         "sanitation": "floor(sanitation_capacity * 1.0)",
-                        "health": "floor(health_beds * 1000 people/bed * 0.12)",
+                        "health": "floor(health_beds * 1000 people/bed)",
                         "access": "floor(access_capacity)",
                     },
                 },
