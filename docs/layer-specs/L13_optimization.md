@@ -1,6 +1,6 @@
 # L13 — Allocation Optimization
 
-**Status:** IMPLEMENTED — verification pending local full-suite verification  
+**Status:** IMPLEMENTED — verification pending local full-suite re-run  \
 **Model:** `L13-allocation-optimization-1.0`
 
 ## Frozen architecture
@@ -46,11 +46,17 @@ Missing distance for a declared feasible pair is an error. It is never interpret
 
 A pair absent from the site's feasible-habitation list is infeasible and receives zero allocation.
 
+Unknown habitation IDs listed in `feasible_habitations` are rejected.
+
+Non-finite distance or objective-weight values are rejected.
+
 No input is silently converted to zero.
 
 ## Solver
 
 OR-Tools CP-SAT. The solver does not write to PostgreSQL/PostGIS; persistence is deferred to later integration.
+
+Solver limits must be positive and finite; worker count must be a positive integer.
 
 ## Acceptance criteria
 
@@ -60,4 +66,5 @@ OR-Tools CP-SAT. The solver does not write to PostgreSQL/PostGIS; persistence is
 - objective components are auditable;
 - solver status is preserved;
 - no DB/API writes;
-- deterministic model construction for fixed inputs and solver parameters.
+- deterministic model construction for fixed inputs and solver parameters;
+- invalid/non-finite validation inputs are rejected explicitly.
