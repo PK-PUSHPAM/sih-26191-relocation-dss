@@ -6,11 +6,11 @@
 
 ## 1. Current Status Summary
 
-- **Current Layer**: `L15` (FastAPI Integration Layer)
-- **Current Status**: `IMPLEMENTED — VERIFICATION PENDING LOCAL RE-RUN`
-- **Next Task**: L15 full-suite verification, then L16 (Dashboard & Decision Reports)
-- **Last Verified Commit**: `2b5ab535` (L14 local full-suite verification)
-- **Active Blockers**: `Authoritative L04-L06 hazard inputs are absent from local data directories`
+- **Current Layer**: `L16` (Dashboard & Decision Reports)
+- **Current Status**: `IMPLEMENTED — FRONTEND BUILD VERIFICATION PENDING LOCAL RE-RUN`
+- **Next Task**: L16 frontend build verification, then L17 (Testing, Docker & Final Audit)
+- **Last Verified Backend Commit**: L15 local full-suite verification — **306 passed, 2 skipped**
+- **Active Blockers**: Authoritative L04-L06 hazard inputs are absent from local data directories
 
 ---
 
@@ -32,30 +32,28 @@
 | **L12** | Relocation Priority Engine | **VERIFIED** | 18; full suite 279 passed, 2 skipped | `5aaa695` |
 | **L13** | Allocation Optimization (CP-SAT) | **VERIFIED** | full suite 289 passed, 2 skipped | `0d1a7cd` |
 | **L14** | Update & Recompute Engine | **VERIFIED** | full suite 303 passed, 2 skipped | `2b5ab535` |
-| **L15** | FastAPI Integration Layer | **IMPLEMENTED — VERIFICATION PENDING** | 3 focused tests added; full-suite verification pending | `025b7fb` |
-| **L16** | Dashboard & Decision Reports | Queued | Pending | - |
+| **L15** | FastAPI Integration Layer | **VERIFIED** | full suite **306 passed, 2 skipped, 1 warning** | local verification |
+| **L16** | Dashboard & Decision Reports | **IMPLEMENTED — VERIFICATION PENDING** | 4 frontend contract tests added; npm build pending | Current |
 | **L17** | Testing, Docker & Final Audit | Queued | Pending | - |
 
 ---
 
-## 3. L15 Implementation Summary
+## 3. L16 Implementation Summary
 
-- FastAPI application with versioned `/api/v1` routes.
-- API contract follows the frozen L15 architecture in `docs/ARCHITECTURE.md`.
-- Administrative boundaries and spatial resources are delivered as GeoJSON in EPSG:4326.
-- Habitation, vulnerability, capacity, priority, run, and allocation data are read from existing PostGIS/SQLAlchemy persistence.
-- `POST /api/v1/optimize` invokes the frozen L13 CP-SAT engine using caller-supplied scenario inputs and objective weights.
-- L15 does not implement or duplicate L04-L12 mathematical formulas.
-- L15 does not perform database migrations or persist optimization results.
-- Report endpoint exposes JSON report data; document/PDF rendering remains L16.
-- Invalid optimization payloads return HTTP 422; missing individual resources return HTTP 404.
-- Database failures are not converted into fabricated empty results.
+- React + Vite dashboard foundation with ten required architecture screens.
+- MapLibre GL JS spatial view consuming backend GeoJSON/API payloads.
+- API client for the L15 versioned endpoints; frontend does not recalculate authoritative metrics.
+- Habitation, site, capacity, optimization, allocation, methodology, and report views.
+- Report export supports backend JSON retrieval, Markdown download, and browser Print / Save as PDF.
+- Backend/API errors are surfaced instead of converted to fabricated values.
+- L16 does not introduce new scoring formulas, thresholds, datasets, or ML.
+- L16 frontend production verification requires `npm install` and `npm run build`.
 
 ## 4. Existing Real-Data Limitations
 
 - Authoritative L04-L06 hazard inputs are absent from local data directories.
 - No real combined-risk raster, red-zone raster, or real Chamoli vulnerability values are generated.
-- L03-L15 verification relies on framework contracts and synthetic/unit fixtures where authoritative inputs are unavailable.
+- L03-L16 verification relies on framework contracts and synthetic/unit fixtures where authoritative inputs are unavailable.
 - Current outputs are decision-support artifacts, not legal orders or engineering-certified capacities.
 
 ## 5. Active Blockers & Decisions Log
