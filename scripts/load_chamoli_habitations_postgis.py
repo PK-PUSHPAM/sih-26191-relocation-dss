@@ -16,6 +16,7 @@ import sys
 
 import geopandas as gpd
 from sqlalchemy import text
+from shapely import force_2d
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -27,7 +28,6 @@ from src.db.session import get_db
 
 CENSUS_SOURCE_ID = "census_2011_basic_population_village"
 SOI_SOURCE_ID = "survey_of_india_uttarakhand_village_boundaries"
-ARTIFACT_ID = "chamoli_habitations_spatial_2011"
 TARGET_CRS = "EPSG:32644"
 
 
@@ -37,6 +37,15 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _normalize_2d_geometry(geometry):
+    if geometry is None:
+        return None
+    # PostGIS core tables are 2D geometry columns. The verified SOI artifact
+    # can carry a constant Z=0 ordinate, so strip Z explicitly rather than
+    # relying on a database-side cast that may reject the insert.
+    return force_2d(geometry)
 
 
 def validate_artifact(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -123,6 +132,8 @@ def load_artifact(artifact: Path, census_checksum: str, soi_checksum: str) -> in
             village_code = str(row.village_lgd)
             habitation_id = f"chamoli_village_{village_code}"
             admin_unit_id = habitation_id
+            geometry_2d = _normalize_2d_geometry(row.geometry)
+            wkt = geometry_2d.wkt
 
             session.execute(
                 text(
@@ -144,7 +155,7 @@ def load_artifact(artifact: Path, census_checksum: str, soi_checksum: str) -> in
                     "unit_id": admin_unit_id,
                     "name": str(row.village_name),
                     "code": village_code,
-                    "wkt": row.geometry.wkt,
+                    "wkt": wkt,
                 },
             )
 
@@ -175,7 +186,7 @@ def load_artifact(artifact: Path, census_checksum: str, soi_checksum: str) -> in
                     "name": str(row.village_name),
                     "population": int(row.population_2011),
                     "households": int(row.households_2011),
-                    "wkt": row.geometry.wkt,
+                    "wkt": wkt,
                     "source_id": CENSUS_SOURCE_ID,
                 },
             )
