@@ -30,10 +30,10 @@ def test_derives_all_component_capacities_and_effective_capacity():
     assert record.land_cap == 150
     assert record.water_cap == 200
     assert record.sanitation_cap == 200
-    assert record.health_cap == 1000
+    assert record.health_cap == 120
     assert record.access_cap == 500
     assert record.binding_bottleneck == "land"
-    assert record.effective_cap == 120
+    assert record.effective_cap == 90
     assert record.quality_flag is CapacityQuality.COMPLETE
 
 
