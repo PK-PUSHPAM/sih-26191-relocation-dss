@@ -62,8 +62,25 @@ def test_cors_allows_local_dashboard_origin():
 
 
 def test_hazards_endpoint_matches_hazard_layer_schema():
-    client = TestClient(app)
-    response = client.get("/api/v1/hazards")
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["items"] == []
+    class FakeResult:
+        def mappings(self):
+            return self
+
+        def all(self):
+            return []
+
+    class FakeSession:
+        def execute(self, *args, **kwargs):
+            return FakeResult()
+
+    from src.api.app import _db_session
+
+    app.dependency_overrides[_db_session] = lambda: FakeSession()
+    try:
+        client = TestClient(app)
+        response = client.get("/api/v1/hazards")
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["items"] == []
+    finally:
+        app.dependency_overrides.pop(_db_session, None)
