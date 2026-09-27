@@ -100,8 +100,8 @@ def habitation_detail(habitation_id: str, session: Session = Depends(_db_session
 @router.get("/hazards")
 def hazards(session: Session = Depends(_db_session)):
     rows = session.execute(text("""
-        SELECT hazard_id, source_id, hazard_type, model_version,
-               valid_from, valid_to, quality_flag, created_at
+        SELECT hazard_id, source_id, type, date_version, model_version,
+               raster_vector_ref, is_normalized, created_at
         FROM hazard_layer
         ORDER BY created_at DESC
     """)).mappings().all()
