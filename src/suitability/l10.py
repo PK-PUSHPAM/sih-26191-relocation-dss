@@ -177,9 +177,17 @@ def run_l10(
         if candidate.protected_land:
             exclusion_reasons.append("protected_land")
 
-        slope_degrees = _validate_optional_nonnegative("slope_degrees", candidate.slope_degrees)
-        road_distance_m = _validate_optional_nonnegative("road_distance_m", candidate.road_distance_m)
-        combined_risk = _validate_score("combined_risk", candidate.combined_risk)
+        try:
+            slope_degrees = _validate_optional_nonnegative("slope_degrees", candidate.slope_degrees)
+            road_distance_m = _validate_optional_nonnegative("road_distance_m", candidate.road_distance_m)
+            combined_risk = _validate_score("combined_risk", candidate.combined_risk)
+        except L10Error as exc:
+            records.append(SiteSuitabilityRecord(
+                candidate.site_id, candidate.geometry, round(area_m2, 2), None,
+                SiteStatus.REJECTED, SiteQuality.INVALID,
+                {"exclusion_reasons": [], "invalid_input": str(exc)},
+            ))
+            continue
 
         if area_m2 < MIN_CONTIGUOUS_AREA_M2:
             exclusion_reasons.append("area_below_1_ha")
@@ -196,11 +204,18 @@ def run_l10(
             ))
             continue
 
+        required_constraints = []
+        if slope_degrees is None:
+            required_constraints.append("slope_degrees")
+        if road_distance_m is None:
+            required_constraints.append("road_distance_m")
         if combined_risk is None:
+            required_constraints.append("combined_risk")
+        if required_constraints:
             records.append(SiteSuitabilityRecord(
                 candidate.site_id, candidate.geometry, round(area_m2, 2), None,
                 SiteStatus.CONDITIONAL, SiteQuality.NON_EVALUABLE,
-                {"exclusion_reasons": [], "missing_fields": ["combined_risk"]},
+                {"exclusion_reasons": [], "missing_fields": required_constraints},
             ))
             continue
 
