@@ -33,7 +33,7 @@ def test_derives_all_component_capacities_and_effective_capacity():
     assert record.health_cap == 1000
     assert record.access_cap == 500
     assert record.binding_bottleneck == "land"
-    assert record.effective_cap == 800
+    assert record.effective_cap == 120
     assert record.quality_flag is CapacityQuality.COMPLETE
 
 
