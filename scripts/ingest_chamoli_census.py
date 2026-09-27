@@ -53,7 +53,7 @@ def find_village_frame(sheets: dict[str, pd.DataFrame]) -> pd.DataFrame:
             continue
         cols = [norm(c) for c in df.columns]
         has_area = any("area_name" in c for c in cols)
-        has_population = any("population_total" in c for c in cols)
+        has_population = any(("population_total" in c) or ("total_population" in c) for c in cols)
         has_location = any("location_code" in c for c in cols)
         if has_area and has_population and has_location:
             candidates.append((sheet_name, df))
