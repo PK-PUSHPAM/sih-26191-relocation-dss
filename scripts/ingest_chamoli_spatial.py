@@ -160,9 +160,10 @@ def match_census_to_soi(
         suffixes=("_soi", "_census"),
     )
 
+    # Keep the Census village_lgd as the single canonical output key.
     matched = matched.rename(
         columns={
-            "Vill_LGD": "village_lgd",
+            "Vill_LGD": "soi_village_lgd",
             "Vill_name": "soi_village_name",
             "Sub_dist": "soi_subdistrict",
         }
