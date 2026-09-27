@@ -25,7 +25,7 @@ For real-time development status, active layer contracts, and verified milestone
 * **Permanent Architecture Context**: [docs/PROJECT_CONTEXT.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/PROJECT_CONTEXT.md)
 * **Layer Contracts & Specifications**: [docs/layer-specs/README.md](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/README.md)
 
-*Current Development Stage*: **L01: Data Ingestion & Validation** (`NOT STARTED`).
+*Current Development Stage*: **L17: Testing, Deployment & Final Audit** (`IMPLEMENTED — Docker smoke verification pending locally`).
 
 ---
 
