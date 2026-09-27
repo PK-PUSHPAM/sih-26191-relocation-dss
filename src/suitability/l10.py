@@ -250,7 +250,7 @@ def run_l10(
             ))
             continue
 
-        missing = [name for name, value in indicator_values.items() if value is None]
+        missing = [score_fields[name] for name, value in indicator_values.items() if value is None]
         if missing:
             records.append(SiteSuitabilityRecord(
                 candidate.site_id, candidate.geometry, round(area_m2, 2), None,
