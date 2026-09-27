@@ -36,22 +36,22 @@ sources:
     notes: "Provides local disaster history, vulnerable habitations lists, hazard zones descriptions."
 
   - source_id: "census_2011_basic_population_village"
-    name: "Basic Population Figures of India / State / District / Sub-District / Village - 2011"
+    name: "PCA TV: Primary Census Abstract at Town, Village and Ward Level - Chamoli - 2011"
     authority: "Census India / Office of the Registrar General & Census Commissioner"
     category: "population_demographics"
-    official_url: "https://censusindia.gov.in/nada/index.php/catalog/42559"
-    access_method: "Direct download / Excel"
+    official_url: "https://censusindia.gov.in/nada/index.php/catalog/6248"
+    access_method: "Manual download / Excel"
     expected_format: "Excel"
     expected_geometry: "None (linked by Census location code)"
     expected_crs: null
-    spatial_scope: "Chamoli District, Uttarakhand (filtered from national village table)"
+    spatial_scope: "Chamoli District, Uttarakhand"
     temporal_scope: "2011 Baseline"
     update_frequency: "Decadal"
     authentication_required: false
     verification_status: "VERIFIED_CATALOG"
     license: "Census of India Data Sharing Policy"
     fallback_source: null
-    notes: "Primary Census Abstract village-level population and household baseline. Geometry must be joined from a separately verified spatial source."
+    notes: "Official Chamoli PCA-TV village-level population and household baseline. Geometry must be joined from a separately verified spatial source."
 
   - source_id: "census_2011_chamoli_dchb_a"
     name: "Chamoli District Census Handbook (DCHB) - Village & Town Directory (Part A)"
