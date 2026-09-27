@@ -176,11 +176,20 @@ def run_l10(
             exclusion_reasons.append("water_body")
         if candidate.protected_land:
             exclusion_reasons.append("protected_land")
+        if area_m2 < MIN_CONTIGUOUS_AREA_M2:
+            exclusion_reasons.append("area_below_1_ha")
+
+        if exclusion_reasons:
+            records.append(SiteSuitabilityRecord(
+                candidate.site_id, candidate.geometry, round(area_m2, 2), None,
+                SiteStatus.REJECTED, SiteQuality.COMPLETE,
+                {"exclusion_reasons": exclusion_reasons},
+            ))
+            continue
 
         try:
             slope_degrees = _validate_optional_nonnegative("slope_degrees", candidate.slope_degrees)
             road_distance_m = _validate_optional_nonnegative("road_distance_m", candidate.road_distance_m)
-            combined_risk = _validate_score("combined_risk", candidate.combined_risk)
         except L10Error as exc:
             records.append(SiteSuitabilityRecord(
                 candidate.site_id, candidate.geometry, round(area_m2, 2), None,
@@ -189,8 +198,6 @@ def run_l10(
             ))
             continue
 
-        if area_m2 < MIN_CONTIGUOUS_AREA_M2:
-            exclusion_reasons.append("area_below_1_ha")
         if slope_degrees is not None and slope_degrees > MAX_ALLOWABLE_SLOPE_DEGREES:
             exclusion_reasons.append("slope_above_30_degrees")
         if road_distance_m is not None and road_distance_m > MAX_ROAD_DISTANCE_METERS:
