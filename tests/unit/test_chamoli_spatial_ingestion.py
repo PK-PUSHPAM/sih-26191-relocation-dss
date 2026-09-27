@@ -17,6 +17,28 @@ def _soi(rows, crs="EPSG:4326"):
     )
 
 
+def test_official_soi_state_lgd_alias_is_accepted(tmp_path):
+    soi = _soi(
+        [
+            {
+                "State_LGD": "05",
+                "Dist_LGD": "057",
+                "District": "CHAMOLI",
+                "Sub_dist": "JOSHIMATH",
+                "Vill_name": "MANA",
+                "Vill_Cat": "RURAL",
+                "Vill_LGD": "040808",
+            }
+        ]
+    )
+    shp = tmp_path / "official_state_lgd.shp"
+    soi.to_file(shp)
+
+    result = load_soi_rural_boundaries(shp)
+    assert len(result) == 1
+    assert result.iloc[0]["STATE_LGD"] == "05"
+
+
 def test_matches_census_to_soi_by_village_code_not_name():
     soi = _soi(
         [
