@@ -25,7 +25,7 @@ DISTRICT_LGD = "057"
 TARGET_CRS = "EPSG:32644"
 # SOI boundary files can expose LGD fields with different casing/aliases.
 SOI_COLUMN_ALIASES = {
-    "STATE_LGD": {"STATE_LGD", "state_lgd"},
+    "STATE_LGD": {"STATE_LGD", "State_LGD", "state_lgd"},
     "Dist_LGD": {"Dist_LGD", "DIST_LGD", "dist_lgd"},
     "District": {"District", "DISTRICT", "district"},
     "Sub_dist": {"Sub_dist", "SUB_DIST", "sub_dist", "SUBDT_LGD", "subdt_lgd"},
