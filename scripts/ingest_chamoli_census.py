@@ -15,10 +15,10 @@ from pathlib import Path
 
 import pandas as pd
 
-SOURCE_ID = "census_2011_chamoli_dchb_b"
+SOURCE_ID = "census_2011_basic_population_village"
 SOURCE_URL = (
-    "https://censusindia.gov.in/nada/index.php/catalog/6248/"
-    "download/12238/DDW_PCA0502_2011_MDDS%20with%20UI.xlsx"
+    "https://censusindia.gov.in/nada/index.php/catalog/42559/"
+    "download/46185/2011-IndiaStateDistSbDistTwn-0000.xlsx"
 )
 STATE_CODE = "05"
 DISTRICT_CODE = "057"
@@ -41,7 +41,7 @@ def find_column(columns, *needles: str) -> str | None:
     for needle in needles:
         target = norm(needle)
         for key, original in normalized.items():
-            if target == key or target in key:
+            if target == key or target in key or key in target:
                 return original
     return None
 
@@ -79,7 +79,7 @@ def normalize_chamoli_population(xlsx: Path) -> pd.DataFrame:
 
     location_col = find_column(df.columns, "location_code")
     area_col = find_column(df.columns, "area_name")
-    population_col = find_column(df.columns, "population_total")
+    population_col = find_column(df.columns, "population_total", "total_population_persons")
     households_col = find_column(df.columns, "number_of_households")
 
     if not all((location_col, area_col, population_col, households_col)):
@@ -146,7 +146,7 @@ def main() -> int:
     args.raw_dir.mkdir(parents=True, exist_ok=True)
     args.curated_dir.mkdir(parents=True, exist_ok=True)
 
-    raw_path = args.raw_dir / "DDW_PCA0502_2011_MDDS_with_UI.xlsx"
+    raw_path = args.raw_dir / "2011-IndiaStateDistSbDistTwn-0000.xlsx"
     print(f"Downloading official Census source: {args.url}")
     try:
         urllib.request.urlretrieve(args.url, raw_path)
