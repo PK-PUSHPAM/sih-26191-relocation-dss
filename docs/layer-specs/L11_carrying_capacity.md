@@ -24,7 +24,7 @@ The repository configuration freezes these prototype parameters:
 - Land: `floor(area_m2 / 10,000 * 150 people/hectare)`
 - Water: `floor(daily_water_liters / 70 L/person/day)`
 - Sanitation: `floor(sanitation_capacity * 1.0)`
-- Health: `floor(health_beds * 1000 people/bed)`
+- Health: `floor(health_beds * 1000 people/bed * 0.12)`
 - Access: `floor(access_capacity)`
 
 The master specification requires service/infrastructure constraints where data permit, but it does not define a further scientific derivation for sanitation or access capacity. Therefore L11 accepts those two as already-derived people-capacity inputs rather than inventing a new proxy.
