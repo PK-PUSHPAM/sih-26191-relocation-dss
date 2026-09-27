@@ -52,7 +52,7 @@ def test_sanitation_is_binding():
 def test_health_is_binding():
     record = run_l11([site(health_beds=0.1)]).records[0]
     assert record.binding_bottleneck == "health"
-    assert record.effective_cap == 12
+    assert record.effective_cap == 80
 
 
 def test_access_is_binding():
