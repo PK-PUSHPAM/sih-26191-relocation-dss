@@ -42,6 +42,7 @@ services:
       - ./config:/app/config
       - ./data:/app/data
       - ./ml:/app/ml
+      - ./scripts:/app/scripts
 
   # Frontend Service: React + MapLibre / Leaflet UI
   frontend:
