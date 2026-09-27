@@ -37,7 +37,7 @@ def test_compose_contract():
     assert "docker/Dockerfile.backend" in compose
     assert "docker/Dockerfile.frontend" in compose
     assert "condition: service_healthy" in compose
-    assert "8000:8000" in compose
+    assert '"${APP_PORT:-8000}:8000"' in compose
     assert "3000:3000" in compose
 
 
