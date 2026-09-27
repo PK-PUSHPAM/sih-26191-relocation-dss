@@ -56,7 +56,7 @@
 | **L08**  | Red-Zone Engine                  | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L08 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L08_red_zone.md)    | 42/42 Passed                       | `aacf149`       |
 | **L09**  | Exposure & Vulnerability Engine  | **VERIFIED** | [L09 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L09_vulnerability.md) | 25/25 Passed; full suite 190/190 | `3ff399e` |
 | **L10**  | Relocation Site Suitability      | **VERIFIED** | [L10 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L10_site_suitability.md) | 37/37 L10 tests; full suite 227/227 passed, 2 skipped | `cdae582` |
-| **L11**  | Carrying Capacity Engine         | **IMPLEMENTED — VERIFICATION PENDING** | [L11 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L11_carrying_capacity.md) | 17 unit tests added; local full suite last reported 247 passed, 4 failed, 2 skipped. The implementation was reconciled back to the frozen health formula; local re-run pending. | `d557411` |
+| **L11**  | Carrying Capacity Engine         | **IMPLEMENTED — VERIFICATION PENDING** | [L11 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L11_carrying_capacity.md) | 17 unit tests added; local full suite last reported 249 passed, 2 failed, 2 skipped; the two failures were stale test expectations for the frozen 0.80 bottleneck formula and have now been corrected. | `d557411` |
 | **L12**  | Relocation Priority Engine       | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L13**  | Allocation Optimization (CP-SAT) | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L14**  | Update & Recompute Engine        | Queued                                            | Pending                                                                                                                | Pending                            | -               |
@@ -168,7 +168,7 @@
 - Binding bottleneck is always surfaced for complete records using deterministic order: land → water → sanitation → health → access.
 - Output field names match the existing `capacity` table contract; no database migration or write is performed by L11.
 - L11 is deterministic and carries model/formula/config provenance. It is a modeled decision-support capacity, not engineering certification or a legal occupancy limit.
-- Implementation lineage: `d557411`; temporary health correction commits: `2a7fb67`, `9a9b82d`, `0c90340`; reconciled by `c581a79`, `cb9c84a`, `8caa02c`.
+- Implementation lineage: `d557411`; temporary health correction commits were superseded; tests were reconciled to the frozen bottleneck formula by `57cbf6e`.
 
 ### Test Suite Summary
 
