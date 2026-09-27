@@ -6,9 +6,9 @@
 
 ## 1. Current Status Summary
 
-- **Current Layer**: `L12` (Relocation Priority Engine)
-- **Current Status**: `VERIFIED — LOCAL FULL SUITE GREEN`
-- **Next Task**: L13 (Allocation Optimization Engine) architecture audit and implementation
+- **Current Layer**: `L13` (Allocation Optimization Engine)
+- **Current Status**: `IMPLEMENTED — VERIFICATION PENDING LOCAL RE-RUN`
+- **Next Task**: L13 full-suite verification, then L14 (Update & Recompute Engine)
 - **Last Verified Commit**: `66aafd5` (L11 local full-suite verification)
 - **Active Blockers**: `Authoritative L04-L06 hazard inputs are absent from local data directories`
 
@@ -58,7 +58,7 @@
 | **L10**  | Relocation Site Suitability      | **VERIFIED** | [L10 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L10_site_suitability.md) | 37/37 L10 tests; full suite 227/227 passed, 2 skipped | `cdae582` |
 | **L11**  | Carrying Capacity Engine         | **VERIFIED** | [L11 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L11_carrying_capacity.md) | 17 unit tests; local full suite **251 passed, 2 skipped** | `66aafd5` |
 | **L12**  | Relocation Priority Engine       | **VERIFIED** | [L12 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L12_relocation_priority.md) | 18 focused tests; local full suite **279 passed, 2 skipped** | `5aaa695` |
-| **L13**  | Allocation Optimization (CP-SAT) | Queued                                            | Pending                                                                                                                | Pending                            | -               |
+| **L13**  | Allocation Optimization (CP-SAT) | **IMPLEMENTED — VERIFICATION PENDING** | [L13 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L13_optimization.md) | CP-SAT implementation + focused tests added; local verification pending | `l13` |
 | **L14**  | Update & Recompute Engine        | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L15**  | FastAPI Integration Layer        | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L16**  | Dashboard & Decision Reports     | Queued                                            | Pending                                                                                                                | Pending                            | -               |
