@@ -1,6 +1,6 @@
 # L14 — Update & Recompute Engine
 
-**Status:** IMPLEMENTED — verification pending local full-suite re-run  
+**Status:** VERIFIED — local full-suite verification completed  
 **Model:** `L14-recompute-engine-1.0`
 
 ## Scope
@@ -47,6 +47,13 @@ Rules:
 - trigger reason;
 - provenance metadata;
 - explicit `database_write=False`.
+
+## Verification
+
+- Local full-suite result: **303 passed, 2 skipped in 4.49s**.
+- L14 focused tests executed as part of the full suite.
+- The two skips remain pre-existing environment/integration skips.
+- Verification covers dataset updates, downstream invalidation, deterministic ordering, configuration changes, and explicit rejection of invalid inputs.
 
 ## Verification acceptance criteria
 
