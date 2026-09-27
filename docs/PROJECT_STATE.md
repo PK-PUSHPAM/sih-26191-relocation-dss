@@ -6,9 +6,9 @@
 
 ## 1. Current Status Summary
 
-- **Current Layer**: `L16` (Dashboard & Decision Reports)
-- **Current Status**: `IMPLEMENTED — FRONTEND BUILD VERIFICATION PENDING LOCAL RE-RUN`
-- **Next Task**: L16 frontend build verification, then L17 (Testing, Docker & Final Audit)
+- **Current Layer**: `L17` (Testing, Deployment & Final Audit)
+- **Current Status**: `IMPLEMENTED — LOCAL TEST/BUILD VERIFIED; DOCKER SMOKE TEST PENDING`
+- **Next Task**: Docker Compose build/up smoke verification, then final release audit
 - **Last Verified Backend Commit**: L15 local full-suite verification — **306 passed, 2 skipped**
 - **Active Blockers**: Authoritative L04-L06 hazard inputs are absent from local data directories
 
@@ -33,8 +33,8 @@
 | **L13** | Allocation Optimization (CP-SAT) | **VERIFIED** | full suite 289 passed, 2 skipped | `0d1a7cd` |
 | **L14** | Update & Recompute Engine | **VERIFIED** | full suite 303 passed, 2 skipped | `2b5ab535` |
 | **L15** | FastAPI Integration Layer | **VERIFIED** | full suite **306 passed, 2 skipped, 1 warning** | local verification |
-| **L16** | Dashboard & Decision Reports | **IMPLEMENTED — VERIFICATION PENDING** | 4 frontend contract tests added; npm build pending | Current |
-| **L17** | Testing, Docker & Final Audit | Queued | Pending | - |
+| **L16** | Dashboard & Decision Reports | **VERIFIED** | 310 passed, 2 skipped; frontend production build passed | verified locally |
+| **L17** | Testing, Docker & Final Audit | **IMPLEMENTED — LOCAL CODE CONTRACTS VERIFIED** | L17 deployment-contract tests added; Docker smoke pending | current |
 
 ---
 
@@ -60,3 +60,17 @@
 
 - **Active Blockers**: Authoritative L04-L06 hazard inputs are absent from local data directories; no real combined-risk output can be generated.
 - **Architectural Decisions**: `OD-01` through `OD-12` strictly respected.
+
+
+## 6. L17 Implementation Summary
+
+- Added committed Python runtime dependencies in `requirements.txt`.
+- Corrected backend Docker entrypoint to the actual `src.api.app:app` FastAPI module.
+- Removed silent Docker dependency-install fallbacks.
+- Added backend health check and Docker build exclusions.
+- Added frontend Docker build exclusions.
+- Added GitHub Actions CI for backend tests, frontend production build, and Docker Compose configuration validation.
+- Added L17 deployment-contract tests.
+- Added the L17 testing/deployment/final-audit specification.
+- Local evidence already available: `310 passed, 2 skipped, 1 warning` and successful `npm run build`.
+- Remaining release verification: run Docker Compose configuration/build/up smoke tests on the user's machine.
