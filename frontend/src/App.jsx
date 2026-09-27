@@ -230,9 +230,15 @@ function Overview() {
               </div>
             </Panel>
 
-            <Panel title="Habitation dataset">
+            <Panel title="Habitation dataset" actions={<span className="section-tag">AUTHORITATIVE</span>}>
               <DataTable data={state.data} />
             </Panel>
+          </div>
+
+          <div className="command-strip">
+            <div><span className="strip-icon">◉</span><div><b>Hazard intelligence</b><small>Explore multi-hazard spatial layers</small></div><a href="#hazards">Open map →</a></div>
+            <div><span className="strip-icon red">△</span><div><b>Red-zone assessment</b><small>Review modeled risk classifications</small></div><a href="#red-zones">View zones →</a></div>
+            <div><span className="strip-icon gold">◇</span><div><b>Relocation planning</b><small>Evaluate candidate sites and capacity</small></div><a href="#sites">Explore sites →</a></div>
           </div>
         </>
       )}
@@ -249,19 +255,31 @@ function GeoScreen({ title, text, loader, mode }) {
       <State state={state} />
 
       {state.data && (
-        <div className="map-grid">
-          <Panel
-            title="Spatial intelligence"
-            actions={<span className="map-chip">INTERACTIVE MAP</span>}
-          >
-            <MapView data={state.data} mode={mode} />
-          </Panel>
-
-          <Panel title="Layer summary">
-            <DataTable data={state.data} />
-            <JsonDetails data={state.data} />
-          </Panel>
-        </div>
+        <>
+          <div className="map-hero">
+            <div className="map-hero-main">
+              <MapView data={state.data} mode={mode} />
+              <div className="map-overlay">
+                <span className="map-live"><i /> LIVE LAYER</span>
+                <div className="map-title">{mode === "risk" ? "Risk classification" : "Multi-hazard intelligence"}</div>
+                <div className="map-subtitle">Backend-authoritative spatial visualization</div>
+              </div>
+              <div className="map-legend">
+                <b>LEGEND</b>
+                {mode === "risk" ? <><span><i className="legend red"/> Red zone</span><span><i className="legend amber"/> Amber</span><span><i className="legend green"/> Lower risk</span></> : <><span><i className="legend teal"/> Hazard layer</span><span><i className="legend white"/> Features</span></>}
+              </div>
+            </div>
+            <div className="map-side">
+              <div className="map-side-head"><span>SPATIAL STATUS</span><strong>LIVE</strong></div>
+              <div className="spatial-orb"><span>{mode === "risk" ? "RISK" : "HAZARD"}</span></div>
+              <h3>{mode === "risk" ? "Risk zone intelligence" : "Multi-hazard overview"}</h3>
+              <p>{mode === "risk" ? "Modeled red-zone and risk-tier classifications are rendered directly from the backend." : "Hazard features are rendered directly from the authoritative hazard API response."}</p>
+              <div className="map-side-stat"><span>Data source</span><b>Backend API</b></div>
+              <div className="map-side-stat"><span>Display CRS</span><b>EPSG:4326</b></div>
+              <details><summary>Inspect payload</summary><JsonDetails data={state.data}/></details>
+            </div>
+          </div>
+        </>
       )}
     </>
   );
