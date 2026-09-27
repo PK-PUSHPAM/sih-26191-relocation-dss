@@ -9,7 +9,7 @@
 - **Current Layer**: `L10` (Relocation Site Suitability)
 - **Current Status**: `FRAMEWORK IMPLEMENTED & VERIFIED (REAL DATA PENDING)`
 - **Next Task**: L11 (Carrying Capacity Engine)
-- **Last Verified Commit**: `3ff399e` (L09 Exposure & Vulnerability Engine)
+- **Last Verified Commit**: `cdae582` (L10 Relocation Site Suitability Engine)
 - **Active Blockers**: `Authoritative L04-L06 hazard inputs are absent from local data directories`
 
 ---
@@ -55,7 +55,7 @@
 | **L07**  | Multi-Hazard Risk Engine         | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L07 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L07_multi_hazard_risk.md) | 29/29 Passed                       | In progress     |
 | **L08**  | Red-Zone Engine                  | **FRAMEWORK VERIFIED**<br>_(Real Data Pending)_   | [L08 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L08_red_zone.md)    | 42/42 Passed                       | `aacf149`       |
 | **L09**  | Exposure & Vulnerability Engine  | **VERIFIED** | [L09 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L09_vulnerability.md) | 25/25 Passed; full suite 190/190 | `3ff399e` |
-| **L10**  | Relocation Site Suitability      | **IMPLEMENTED — VERIFICATION PENDING** | [L10 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L10_site_suitability.md) | Added unit suite | `L10-site-suitability-1.0` |
+| **L10**  | Relocation Site Suitability      | **VERIFIED** | [L10 Spec](file:///c:/Users/pushp/OneDrive/Desktop/sih-26191-relocation-dss/docs/layer-specs/L10_site_suitability.md) | 37/37 L10 tests; full suite 227/227 passed, 2 skipped | `cdae582` |
 | **L11**  | Carrying Capacity Engine         | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L12**  | Relocation Priority Engine       | Queued                                            | Pending                                                                                                                | Pending                            | -               |
 | **L13**  | Allocation Optimization (CP-SAT) | Queued                                            | Pending                                                                                                                | Pending                            | -               |
@@ -149,7 +149,7 @@
 - Invalid numeric inputs never become a valid score; they are rejected with quality state invalid.
 - L10 accepts candidate polygons and already-derived normalized suitability indicators; it does not fabricate source data or invent normalization functions.
 - L10 performs no database writes, migrations, APIs, carrying-capacity calculation, priority calculation, or optimization.
-- Local full-suite verification is pending for the L10 implementation.
+- Local full-suite verification completed: **227 passed, 2 skipped**. L10 is verified on commit `cdae582`.
 
 ### L09 Implementation Details
 
@@ -161,7 +161,7 @@
 
 ### Test Suite Summary
 
-- **Last verified full-suite result before L10**: **190 passed, 2 skipped** (L01-L09; L09 contributes 25 tests). L10 verification is pending.
+- **Last verified full-suite result**: **227 passed, 2 skipped** after L10. L10 contributes 37 tests; all 37 passed.
 - **Real L04 Data Availability**: No usable boundary, DEM, landslide inventory, LULC, geology, drainage, or roads/infrastructure files are present. `data/raw/`, `data/staging/`, and `data/curated/` contain only `.gitkeep` markers.
 - **L04 Implementation Status**: L04 is implemented as a data-driven baseline engine. Source-specific LULC and lithology mappings are not fabricated; drainage and road distance parameters must be explicitly supplied as dataset/model configuration.
 - **Real L04 Hazard Raster Generated**: **No**. Generation is DATA-PENDING; no geographic values were fabricated.
