@@ -121,7 +121,7 @@ def normalize_chamoli_population(xlsx: Path) -> pd.DataFrame:
 
         out = out[
             ~out["village_name"].str.contains(
-                r"\b(district|sub[- ]district|total|urban|ward)\b",
+                r"\b(?:district|sub[- ]district|total|urban|ward)\b",
                 case=False,
                 na=False,
             )
