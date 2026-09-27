@@ -1,4 +1,4 @@
-"""
-Layer 15: FastAPI Application & Endpoints
-Exposes GIS, risk, site, capacity, priority, optimization, and report endpoints.
-"""
+"""L15 FastAPI API package."""
+from .app import app
+
+__all__ = ["app"]
