@@ -220,10 +220,18 @@ def run_l10(
             continue
 
         indicator_values: Dict[str, Optional[float]] = {}
-        for score_name, field_name in score_fields.items():
-            indicator_values[score_name] = _validate_score(
-                field_name, getattr(candidate, field_name)
-            )
+        try:
+            for score_name, field_name in score_fields.items():
+                indicator_values[score_name] = _validate_score(
+                    field_name, getattr(candidate, field_name)
+                )
+        except L10Error as exc:
+            records.append(SiteSuitabilityRecord(
+                candidate.site_id, candidate.geometry, round(area_m2, 2), None,
+                SiteStatus.REJECTED, SiteQuality.INVALID,
+                {"exclusion_reasons": [], "invalid_input": str(exc)},
+            ))
+            continue
 
         missing = [name for name, value in indicator_values.items() if value is None]
         if missing:
