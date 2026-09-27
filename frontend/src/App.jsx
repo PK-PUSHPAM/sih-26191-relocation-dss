@@ -287,19 +287,54 @@ function GeoScreen({ title, text, loader, mode }) {
 
 function Habitations() {
   const state = useApi(React.useCallback(() => api.habitations(), []));
+  const rows = state.data?.features || state.data?.items || state.data?.results || [];
+  const riskCount = rows.filter((row) => {
+    const tier = row?.properties?.tier ?? row?.tier;
+    return tier === "Immediate" || tier === "Short-term";
+  }).length;
 
   return (
     <>
       <PageIntro
         title="Habitation Risk"
-        text="Inspect habitation records and risk-related information returned by the authoritative API."
+        text="Inspect vulnerable habitations, exposure and backend-computed priority classifications."
       />
       <State state={state} />
       {state.data && (
-        <Panel title="Habitation intelligence">
-          <DataTable data={state.data} />
-          <JsonDetails data={state.data} />
-        </Panel>
+        <>
+          <div className="cards">
+            <Metric icon="⌖" label="Habitations returned" value={rows.length} />
+            <Metric icon="△" label="Priority tiers present" value={riskCount} tone="gold" />
+            <Metric icon="●" label="Source" value="Backend API" tone="green" />
+          </div>
+          <div className="risk-grid">
+            {rows.length ? rows.slice(0, 24).map((feature, index) => {
+              const item = feature?.properties || feature;
+              const tier = item.tier || "Unclassified";
+              const tierClass = tier.toLowerCase().replaceAll(" ", "-");
+              return (
+                <article className="risk-card" key={item.habitation_id || index}>
+                  <div className="risk-card-top">
+                    <span className="risk-id">{item.habitation_id || "HABITATION"}</span>
+                    <span className={`tier-badge ${tierClass}`}>{tier}</span>
+                  </div>
+                  <h3>{item.name || "Unnamed habitation"}</h3>
+                  <div className="risk-card-metrics">
+                    <div><span>Population</span><b>{item.population ?? "—"}</b></div>
+                    <div><span>Vulnerability</span><b>{item.vulnerability ?? "—"}</b></div>
+                    <div><span>Priority score</span><b>{item.priority_score ?? "—"}</b></div>
+                    <div><span>Population year</span><b>{item.population_year ?? "—"}</b></div>
+                  </div>
+                  <div className="risk-card-footer"><span>Admin unit</span><b>{item.admin_unit_id ?? "—"}</b></div>
+                </article>
+              );
+            }) : <div className="empty-state wide-empty"><div className="empty-icon">⌖</div><strong>No habitation records</strong><span>Import or connect the authoritative habitation dataset to populate this workspace.</span></div>}
+          </div>
+          <Panel title="Backend record detail" actions={<span className="section-tag">RAW / AUDIT</span>}>
+            <DataTable data={state.data} />
+            <JsonDetails data={state.data} />
+          </Panel>
+        </>
       )}
     </>
   );
@@ -307,6 +342,7 @@ function Habitations() {
 
 function Sites() {
   const state = useApi(React.useCallback(() => api.sites(), []));
+  const rows = state.data?.features || state.data?.items || state.data?.results || [];
 
   return (
     <>
@@ -316,10 +352,38 @@ function Sites() {
       />
       <State state={state} />
       {state.data && (
-        <Panel title="Candidate sites">
-          <DataTable data={state.data} />
-          <JsonDetails data={state.data} />
-        </Panel>
+        <>
+          <div className="cards">
+            <Metric icon="◇" label="Candidate sites" value={rows.length} />
+            <Metric icon="◎" label="Suitability source" value="L10" tone="gold" />
+            <Metric icon="●" label="Status" value="Backend authoritative" tone="green" />
+          </div>
+          <div className="site-grid">
+            {rows.length ? rows.slice(0, 24).map((feature, index) => {
+              const item = feature?.properties || feature;
+              const suitability = item.suitability;
+              const status = item.status || "Unspecified";
+              return (
+                <article className="site-card" key={item.site_id || index}>
+                  <div className="site-card-top">
+                    <span className="site-id">{item.site_id || "SITE"}</span>
+                    <span className="status-badge">{status}</span>
+                  </div>
+                  <div className="site-visual"><span>◇</span><small>CANDIDATE SITE</small></div>
+                  <div className="site-card-body">
+                    <div><span>Area</span><b>{item.area ?? "—"}</b></div>
+                    <div><span>Suitability</span><b>{suitability ?? "—"}</b></div>
+                  </div>
+                  <div className="site-explain">{item.explanation_json ? "Backend explanation available" : "No explanation payload available"}</div>
+                </article>
+              );
+            }) : <div className="empty-state wide-empty"><div className="empty-icon">◇</div><strong>No candidate sites</strong><span>Candidate-site outputs will appear here when the backend dataset is available.</span></div>}
+          </div>
+          <Panel title="Site records" actions={<span className="section-tag">AUTHORITATIVE</span>}>
+            <DataTable data={state.data} />
+            <JsonDetails data={state.data} />
+          </Panel>
+        </>
       )}
     </>
   );
@@ -330,62 +394,46 @@ function Capacity() {
   const [state, setState] = useState(null);
 
   const loadCapacity = () => {
-    if (!id) return;
+    if (!id.trim()) return;
     setState({ loading: true });
-
-    api
-      .siteCapacity(id)
-      .then((data) => setState({ data }))
-      .catch((error) => setState({ error }));
+    api.siteCapacity(id.trim()).then((data) => setState({ data })).catch((error) => setState({ error }));
   };
 
   return (
     <>
       <PageIntro
         title="Capacity Dashboard"
-        text="Inspect the five capacity components and the binding bottleneck for a selected relocation site."
+        text="Inspect the five capacity components, effective capacity and the backend-identified binding bottleneck."
       />
-
-      <Panel title="Site capacity lookup">
-        <div className="form-row">
-          <input
-            value={id}
-            onChange={(event) => setId(event.target.value)}
-            placeholder="Enter site ID"
-          />
-          <button onClick={loadCapacity}>Load capacity</button>
+      <Panel title="Site capacity lookup" actions={<span className="section-tag">L11 OUTPUT</span>}>
+        <div className="lookup-box">
+          <div><span className="lookup-icon">▦</span><div><b>Capacity intelligence</b><small>Enter a candidate site ID to retrieve authoritative capacity outputs.</small></div></div>
+          <div className="form-row">
+            <input value={id} onChange={(event) => setId(event.target.value)} onKeyDown={(event) => event.key === "Enter" && loadCapacity()} placeholder="e.g. SITE-001" />
+            <button onClick={loadCapacity}>Inspect capacity →</button>
+          </div>
         </div>
 
-        {state?.loading && (
-          <div className="state loading-state">
-            <span className="spinner" />
-            Loading…
-          </div>
-        )}
-
-        {state?.error && (
-          <div className="state error">{state.error.message}</div>
-        )}
+        {state?.loading && <div className="state loading-state"><span className="spinner" />Loading capacity output…</div>}
+        {state?.error && <div className="state error">{state.error.message}</div>}
 
         {state?.data && (
-          <div className="result-card">
+          <div className="capacity-result">
+            <div className="capacity-hero">
+              <div><span>Effective capacity</span><strong>{state.data.effective_cap ?? "—"}</strong><small>persons / backend output</small></div>
+              <div className="bottleneck"><span>Binding bottleneck</span><b>{state.data.binding_bottleneck ?? "—"}</b></div>
+            </div>
             <div className="capacity-grid">
               {[
-                "land_cap",
-                "water_cap",
-                "sanitation_cap",
-                "health_cap",
-                "access_cap",
-                "effective_cap",
-              ].map((key) => (
-                <Metric
-                  key={key}
-                  label={key.replaceAll("_", " ")}
-                  value={state.data[key] ?? "—"}
-                  icon="▦"
-                />
+                ["land_cap","LAND"],["water_cap","WATER"],["sanitation_cap","SANITATION"],
+                ["health_cap","HEALTH"],["access_cap","ACCESS"],
+              ].map(([key,label]) => (
+                <div className="capacity-item" key={key}>
+                  <span>{label}</span><strong>{state.data[key] ?? "—"}</strong><small>authoritative output</small>
+                </div>
               ))}
             </div>
+            <div className="capacity-meta"><span>Site <b>{state.data.site_id ?? id}</b></span><span>Suitability <b>{state.data.suitability ?? "—"}</b></span><span>Status <b>{state.data.status ?? "—"}</b></span></div>
             <JsonDetails data={state.data} />
           </div>
         )}
