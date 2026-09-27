@@ -26,7 +26,7 @@ def test_normalize_chamoli_population_filters_aggregates(monkeypatch, tmp_path):
     assert list(result["village_name"]) == ["Mana", "Khiron"]
     assert list(result["population_2011"]) == [1214, 321]
     assert list(result["households_2011"]) == [558, 100]
-    assert set(result["source_id"]) == {"census_2011_chamoli_dchb_b"}
+    assert set(result["source_id"]) == {"census_2011_basic_population_village"}
 
 
 def test_missing_population_is_not_converted_to_zero(monkeypatch, tmp_path):
