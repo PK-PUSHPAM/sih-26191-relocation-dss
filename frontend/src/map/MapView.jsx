@@ -48,7 +48,13 @@ export default function MapView({ data, mode = "hazards" }) {
             id: "carto-dark",
             type: "raster",
             source: "carto-dark",
-            paint: { "raster-opacity": 0.92 },
+            paint: {
+              "raster-opacity": 0.9,
+              "raster-saturation": -0.65,
+              "raster-contrast": 0.08,
+              "raster-brightness-min": 0.12,
+              "raster-brightness-max": 0.68,
+            },
           },
         ],
       },
@@ -70,7 +76,7 @@ export default function MapView({ data, mode = "hazards" }) {
 
       const bounds = getBounds(geojson);
       if (bounds && !bounds.isEmpty()) {
-        map.fitBounds(bounds, { padding: 70, maxZoom: 11, duration: 700 });
+        map.fitBounds(bounds, { padding: 55, maxZoom: 13, duration: 700 });
       }
 
       if (mode === "risk") {
