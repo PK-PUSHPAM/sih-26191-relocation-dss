@@ -32,5 +32,5 @@ This directory contains the authoritative implementation specifications (contrac
 | **L13** | `L13_optimization.md` | Allocation Optimization | Constrained integer optimization (OR-Tools CP-SAT) |
 | **L14** | `L14_recompute_engine.md`| Update / Recompute Engine | Automated pipeline recomputation on updated telemetry/data |
 | **L15** | `L15_api_endpoints.md` | FastAPI Integration Layer | REST endpoints (`/api/v1/...`) serving GeoJSON and analytics |
-| **L16** | `L16_dashboard_reports.md`| Interactive UI & Reports | React + MapLibre 10-screen decision interface & PDF export |
+| **L16** | `L16_dashboard_reports.md`| Interactive UI & Reports | React + MapLibre 10-screen decision interface & report export |
 | **L17** | `L17_testing_deploy.md` | Testing, Docker & Final Audit | End-to-end acceptance suite, Docker compose verification |
