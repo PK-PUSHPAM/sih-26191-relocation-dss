@@ -12,11 +12,16 @@ import argparse
 import hashlib
 from datetime import date
 from pathlib import Path
+import sys
 
 import geopandas as gpd
 from sqlalchemy import text
 
-from src.common.config import REPO_ROOT, get_source_by_id
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from src.common.config import get_source_by_id
 from src.db.session import get_db
 
 
