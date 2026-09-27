@@ -37,12 +37,10 @@ export default function MapView({ data, mode = "hazards" }) {
           "carto-dark": {
             type: "raster",
             tiles: [
-              "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-              "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-              "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+              "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
             ],
             tileSize: 256,
-            attribution: "© OpenStreetMap contributors © CARTO",
+            attribution: "© OpenStreetMap contributors",
           },
         },
         layers: [
