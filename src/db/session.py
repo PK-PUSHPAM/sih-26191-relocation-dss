@@ -10,14 +10,16 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 Base = declarative_base()
 
-DEFAULT_DB_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/sih_chamoli_dss"
+DEFAULT_DB_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/sih_chamoli_dss"
 
 def get_database_url() -> str:
     """Get database URL from environment or default local PostGIS instance."""
     url = os.getenv("DATABASE_URL", DEFAULT_DB_URL)
-    # Ensure driver compatibility with psycopg v3
+    # Use the psycopg2 driver bundled in the project runtime dependencies.
     if url.startswith("postgresql://"):
-        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+    elif url.startswith("postgresql+psycopg://"):
+        url = url.replace("postgresql+psycopg://", "postgresql+psycopg2://", 1)
     return url
 
 _engine: Optional[Engine] = None
@@ -56,7 +58,7 @@ def check_db_connection(engine: Optional[Engine] = None, timeout_seconds: float 
     db_url = get_database_url()
     try:
         # Extract host and port
-        parsed = urlparse(db_url.replace("postgresql+psycopg://", "http://"))
+        parsed = urlparse(db_url.replace("postgresql+psycopg2://", "http://"))
         host = parsed.hostname or "localhost"
         port = parsed.port or 5432
 
