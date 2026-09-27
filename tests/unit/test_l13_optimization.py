@@ -74,6 +74,36 @@ def test_hazard_term_affects_choice():
     assert result.allocations[0].site_id == "SAFE"
 
 
+def test_unknown_feasible_habitation_is_rejected():
+    with pytest.raises(L13Error, match="unknown habitation_id"):
+        run_l13(
+            [h("H1", 10)],
+            [s("S1", 10, 0.0, ["H2"])],
+            {},
+            distance_weight=1.0, unmet_penalty=1000.0, hazard_weight=0.0,
+        )
+
+
+def test_nonfinite_distance_is_rejected():
+    with pytest.raises(L13Error, match="distance must be non-negative"):
+        run_l13(
+            [h("H1", 10)],
+            [s("S1", 10, 0.0, ["H1"])],
+            {("H1", "S1"): float("inf")},
+            distance_weight=1.0, unmet_penalty=1000.0, hazard_weight=0.0,
+        )
+
+
+def test_nonfinite_weight_is_rejected():
+    with pytest.raises(L13Error, match="distance_weight must be > 0"):
+        run_l13(
+            [h("H1", 10)],
+            [s("S1", 10, 0.0, ["H1"])],
+            {("H1", "S1"): 1.0},
+            distance_weight=float("inf"), unmet_penalty=1000.0, hazard_weight=0.0,
+        )
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
