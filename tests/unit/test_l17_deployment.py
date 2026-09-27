@@ -26,7 +26,7 @@ def test_frontend_runtime_contract():
 
     assert '"build": "vite build"' in package_json
     assert "npm install --no-audit --no-fund" in dockerfile
-    assert 'CMD ["npm", "run", "dev"]' in dockerfile
+    assert 'CMD ["npm", "run", "dev", "--", "--port", "3000"]' in dockerfile
     assert "|| true" not in dockerfile
 
 
