@@ -104,6 +104,23 @@ def _validate_grid(grid: CanonicalGridDefinition) -> None:
     validate_l07_grid(grid)
 
 
+def _validate_hard_exclusion_metadata(metadata: Mapping[str, Any]) -> None:
+    """Validate that hard-exclusion provenance contains required fields.
+
+    The frozen L08 contract requires the hard-exclusion raster to be traceable to
+    a source, checksum, and timestamp. Raises ``ValueError`` if any required
+    field is missing.
+    """
+    if metadata is None:
+        raise ValueError("hard_exclusion_metadata is required")
+    required = ("source", "checksum", "timestamp")
+    missing = [k for k in required if k not in metadata]
+    if missing:
+        raise ValueError(
+            f"hard_exclusion_metadata missing required provenance fields: {missing}"
+        )
+
+
 def _validate_raster(name: str, array: np.ndarray, grid: CanonicalGridDefinition) -> None:
     """Common raster validation.
 
@@ -162,7 +179,8 @@ def run_l08(
     l07_metadata:
         Propagated ``MultiHazardResult.metadata``.
     hard_exclusion_metadata:
-        Optional provenance for the hard‑exclusion raster.
+        Required provenance for the hard‑exclusion raster; must contain
+        ``source``, ``checksum``, and ``timestamp`` keys.
     """
 
     if combined_risk is None:
@@ -170,6 +188,8 @@ def run_l08(
 
     if hard_exclusion is None:
         raise ValueError("hard_exclusion raster is required")
+
+    _validate_hard_exclusion_metadata(hard_exclusion_metadata)
 
     _validate_grid(grid)
     _validate_raster("combined_risk", combined_risk, grid)

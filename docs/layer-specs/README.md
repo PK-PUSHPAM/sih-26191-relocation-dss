@@ -24,7 +24,7 @@ This directory contains the authoritative implementation specifications (contrac
 | **L05** | `L05_flood_hazard.md` | Flood / Flash Flood Baseline | Flood exposure masks and inundation levels |
 | **L06** | `L06_rainfall_trigger.md` | Rainfall Trigger Index | Rolling precipitation triggers & telemetry updates |
 | **L07** | `L07_multi_hazard_risk.md`| Multi-Hazard Risk Engine | Normalized multi-hazard score $H = 0.45L + 0.35F + 0.20R$ |
-| **L08** | `L08_red_zone_engine.md` | Red-Zone Engine | Red/amber/lower risk cell classifications + explanations |
+| **L08** | `L08_red_zone.md` | Red-Zone Engine | Red/amber/lower risk cell classifications + explanations |
 | **L09** | `L09_vulnerability.md` | Exposure & Vulnerability Engine| Habitation-level vulnerability score $V$ and exposed population |
 | **L10** | `L10_site_suitability.md`| Relocation Site Suitability | Candidate relocation site polygons and suitability score $S$ |
 | **L11** | `L11_carrying_capacity.md`| Carrying Capacity Engine | Bottleneck analysis and effective carrying capacity |

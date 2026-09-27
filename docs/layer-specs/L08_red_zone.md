@@ -24,7 +24,11 @@ modify L07 fields (`h_landslide`, `h_flood`, `h_rain`, `combined_risk`).
 - Boolean `hard_exclusion` raster (dtype `bool`) — `True` marks cells that are
   hard-excluded regardless of hazard score
 - L07 result metadata (optional, for provenance and hazard value preservation)
-- Hard-exclusion provenance metadata (optional, for traceability)
+- **Required** hard-exclusion provenance metadata — a mapping containing
+  `source` (raster origin/identifier), `checksum` (integrity hash), and
+  `timestamp` (UTC ISO-8601). L08 does not generate or derive the
+  hard-exclusion raster; it validates that provenance is supplied and rejects
+  calls missing any of the three fields.
 
 All inputs must use the existing L03 canonical grid. L08 rejects mismatched
 grids. It performs no reprojection, resampling, or interpolation.
@@ -140,7 +144,12 @@ The result `metadata` dictionary contains:
 - `resolution_m`: `30.0`
 - `grid`: canonical grid definition (`to_dict()`)
 - `l07_input`: L07 metadata (propagated, not fabricated)
-- `hard_exclusion_input`: hard-exclusion provenance (propagated, if provided)
+- `hard_exclusion_input`: hard-exclusion provenance containing `source`,
+  `checksum`, and `timestamp` (required; rejected if absent)
+
+Hard-exclusion provenance is **required** on every call. L08 validates that the
+`hard_exclusion_metadata` argument contains `source`, `checksum`, and `timestamp`
+keys before processing. No provenance is fabricated for missing inputs.
 
 ## Outputs
 

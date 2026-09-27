@@ -12,13 +12,20 @@ from src.risk.multi_hazard import RiskCellRecord, QualityState
 BBox = (0.0, 0.0, CANONICAL_RESOLUTION_METERS * 2, CANONICAL_RESOLUTION_METERS * 2)
 GRID = create_canonical_grid(BBox)
 
+# Frozen L08 contract: hard-exclusion raster must carry provenance metadata.
+HE_METADATA = {
+    "source": "test_hard_exclusion_raster",
+    "checksum": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "timestamp": "2026-01-01T00:00:00+00:00",
+}
+
 def test_hard_exclusion_true_nodata():
     """Case T‑01 – hard exclusion true + NoData combined risk.
     Expected: red_zone=True, tier=RED, quality=NON_EVALUABLE.
     """
     combined = np.full((2, 2), DEFAULT_NODATA_FLOAT, dtype=np.float32)
     hard_ex = np.full((2, 2), True, dtype=bool)
-    result = run_l08(GRID, combined, hard_ex)
+    result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
     assert result.red_zone.all()
     # risk_tier array holds string values after conversion in run_l08
     assert (result.risk_tier == RiskTier.RED.value).all()
@@ -32,7 +39,7 @@ def test_hard_exclusion_false_nodata():
     """
     combined = np.full((2, 2), DEFAULT_NODATA_FLOAT, dtype=np.float32)
     hard_ex = np.full((2, 2), False, dtype=bool)
-    result = run_l08(GRID, combined, hard_ex)
+    result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
     assert not result.red_zone.any()
     assert (result.risk_tier == RiskTier.LOWER_RISK.value).all()
     for rec in result.records:
@@ -57,7 +64,7 @@ def test_threshold_boundaries(h_val, expected_tier):
     combined = np.full((2, 2), DEFAULT_NODATA_FLOAT, dtype=np.float32)
     combined[0, 0] = h_val
     hard_ex = np.full((2, 2), False, dtype=bool)
-    result = run_l08(GRID, combined, hard_ex)
+    result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
     assert result.red_zone[0, 0] == (h_val >= RED_ZONE_THRESHOLD)
     assert result.risk_tier[0, 0] == expected_tier.value
     rec = result.records[0]
@@ -74,7 +81,7 @@ def test_invalid_combined_risk_handling():
             combined = np.full((2, 2), DEFAULT_NODATA_FLOAT, dtype=np.float32)
             combined[0, 0] = val
             hard_ex = np.full((2, 2), he_flag, dtype=bool)
-            result = run_l08(GRID, combined, hard_ex)
+            result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
             assert result.red_zone[0, 0] == exp_red
             assert result.risk_tier[0, 0] == exp_tier.value
             rec = result.records[0]
@@ -88,7 +95,7 @@ def test_spatial_mismatch_raises():
     combined = np.full((2, 2), 0.5, dtype=np.float32)
     hard_ex = np.full((2, 2), False, dtype=bool)
     with pytest.raises(ValueError):
-        run_l08(other_grid, combined, hard_ex)
+        run_l08(other_grid, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
 
 # =========================================================================
@@ -120,7 +127,7 @@ class TestCRSMismatch:
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
         with pytest.raises(Exception, match="CRS"):
-            run_l08(bad_grid, combined, hard_ex)
+            run_l08(bad_grid, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
 
 class TestResolutionMismatch:
@@ -135,7 +142,7 @@ class TestResolutionMismatch:
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
         with pytest.raises(Exception, match="30"):
-            run_l08(bad_grid, combined, hard_ex)
+            run_l08(bad_grid, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
 
 class TestTransformMismatch:
@@ -151,7 +158,7 @@ class TestTransformMismatch:
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
         with pytest.raises(Exception, match="transform"):
-            run_l08(bad_grid, combined, hard_ex)
+            run_l08(bad_grid, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
     def test_shifted_origin_transform_raises(self):
         # Transform with shifted origin (different x_min)
@@ -163,7 +170,7 @@ class TestTransformMismatch:
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
         with pytest.raises(Exception, match="transform"):
-            run_l08(bad_grid, combined, hard_ex)
+            run_l08(bad_grid, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
 
 class TestDimensionMismatch:
@@ -173,13 +180,13 @@ class TestDimensionMismatch:
         combined = np.full((3, 3), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
         with pytest.raises(ValueError, match="dimensions"):
-            run_l08(GRID, combined, hard_ex)
+            run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
     def test_hard_exclusion_wrong_shape_raises(self):
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((3, 3), False, dtype=bool)
         with pytest.raises(ValueError, match="dimensions"):
-            run_l08(GRID, combined, hard_ex)
+            run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
 
 class TestHardExclusionSpatialMismatch:
@@ -189,7 +196,7 @@ class TestHardExclusionSpatialMismatch:
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((4, 4), False, dtype=bool)
         with pytest.raises(ValueError, match="dimensions"):
-            run_l08(GRID, combined, hard_ex)
+            run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
 
 class TestMissingHardExclusion:
@@ -198,7 +205,7 @@ class TestMissingHardExclusion:
     def test_none_hard_exclusion_raises(self):
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         with pytest.raises(ValueError, match="hard_exclusion.*required"):
-            run_l08(GRID, combined, None)
+            run_l08(GRID, combined, None, hard_exclusion_metadata=HE_METADATA)
 
 
 class TestNonBooleanHardExclusion:
@@ -208,19 +215,19 @@ class TestNonBooleanHardExclusion:
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), 0, dtype=np.int32)
         with pytest.raises(ValueError, match="Boolean"):
-            run_l08(GRID, combined, hard_ex)
+            run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
     def test_float_dtype_raises(self):
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), 0.0, dtype=np.float64)
         with pytest.raises(ValueError, match="Boolean"):
-            run_l08(GRID, combined, hard_ex)
+            run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
     def test_uint8_dtype_raises(self):
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), 0, dtype=np.uint8)
         with pytest.raises(ValueError, match="Boolean"):
-            run_l08(GRID, combined, hard_ex)
+            run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
 
 # =========================================================================
@@ -233,7 +240,7 @@ class TestToDict:
     def test_to_dict_succeeds(self):
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
-        result = run_l08(GRID, combined, hard_ex)
+        result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
         d = result.to_dict()
         assert set(d.keys()) == {"red_zone", "risk_tier", "records", "metadata"}
         assert isinstance(d["risk_tier"], list)
@@ -241,7 +248,7 @@ class TestToDict:
     def test_to_dict_risk_tier_values(self):
         combined = np.full((2, 2), 0.75, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
-        result = run_l08(GRID, combined, hard_ex)
+        result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
         d = result.to_dict()
         for row in d["risk_tier"]:
             for val in row:
@@ -259,7 +266,7 @@ class TestRecordSchema:
     def test_record_to_dict_keys(self):
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
-        result = run_l08(GRID, combined, hard_ex)
+        result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
         d = result.records[0].to_dict()
         assert set(d.keys()) == self.EXPECTED_KEYS
 
@@ -277,7 +284,7 @@ def test_invalid_h_record_combined_risk_is_none(h_val):
     combined = np.full((2, 2), DEFAULT_NODATA_FLOAT, dtype=np.float32)
     combined[0, 0] = h_val
     hard_ex = np.full((2, 2), False, dtype=bool)
-    result = run_l08(GRID, combined, hard_ex)
+    result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
     rec = result.records[0]
     assert rec.combined_risk is None
     assert rec.quality_flag == QualityState.INVALID
@@ -311,7 +318,7 @@ class TestMixedCells:
         # cell 2 (row=1, col=0) stays NoData
         combined[1, 1] = np.nan  # cell 3: invalid (row=1, col=1)
         hard_ex = np.full((2, 2), False, dtype=bool)
-        result = run_l08(GRID, combined, hard_ex)
+        result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
 
         recs = {r.cell_id: r for r in result.records}
 
@@ -370,7 +377,7 @@ class TestL07Immutability:
             for i in range(4)
         )
         l07_metadata = {"records": l07_records}
-        result = run_l08(GRID, combined, hard_ex, l07_metadata=l07_metadata)
+        result = run_l08(GRID, combined, hard_ex, l07_metadata=l07_metadata, hard_exclusion_metadata=HE_METADATA)
 
         for i, rec in enumerate(result.records):
             assert rec.h_landslide == 0.3
@@ -402,13 +409,13 @@ class TestProvenance:
     def test_provenance_keys(self):
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
-        result = run_l08(GRID, combined, hard_ex)
+        result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
         assert set(result.metadata.keys()) == self.REQUIRED_KEYS
 
     def test_provenance_values(self):
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
-        result = run_l08(GRID, combined, hard_ex)
+        result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
         meta = result.metadata
         assert meta["layer"] == "L08"
         assert meta["rule_identifier"] == "OD-05"
@@ -416,6 +423,46 @@ class TestProvenance:
         assert meta["amber_threshold"] == AMBER_THRESHOLD
         assert meta["crs"] == "EPSG:32644"
         assert meta["resolution_m"] == CANONICAL_RESOLUTION_METERS
+
+    def test_hard_exclusion_provenance_in_metadata(self):
+        combined = np.full((2, 2), 0.5, dtype=np.float32)
+        hard_ex = np.full((2, 2), False, dtype=bool)
+        result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
+        he_meta = result.metadata["hard_exclusion_input"]
+        assert he_meta["source"] == "test_hard_exclusion_raster"
+        assert "checksum" in he_meta
+        assert "timestamp" in he_meta
+
+
+class TestHardExclusionProvenanceValidation:
+    """hard_exclusion_metadata must contain source, checksum, and timestamp."""
+
+    def test_none_metadata_raises(self):
+        combined = np.full((2, 2), 0.5, dtype=np.float32)
+        hard_ex = np.full((2, 2), False, dtype=bool)
+        with pytest.raises(ValueError, match="required"):
+            run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=None)
+
+    def test_missing_source_raises(self):
+        combined = np.full((2, 2), 0.5, dtype=np.float32)
+        hard_ex = np.full((2, 2), False, dtype=bool)
+        bad_meta = {"checksum": "abc123", "timestamp": "2026-01-01T00:00:00+00:00"}
+        with pytest.raises(ValueError, match="source"):
+            run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=bad_meta)
+
+    def test_missing_checksum_raises(self):
+        combined = np.full((2, 2), 0.5, dtype=np.float32)
+        hard_ex = np.full((2, 2), False, dtype=bool)
+        bad_meta = {"source": "test", "timestamp": "2026-01-01T00:00:00+00:00"}
+        with pytest.raises(ValueError, match="checksum"):
+            run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=bad_meta)
+
+    def test_missing_timestamp_raises(self):
+        combined = np.full((2, 2), 0.5, dtype=np.float32)
+        hard_ex = np.full((2, 2), False, dtype=bool)
+        bad_meta = {"source": "test", "checksum": "abc123"}
+        with pytest.raises(ValueError, match="timestamp"):
+            run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=bad_meta)
 
 
 # =========================================================================
@@ -428,13 +475,13 @@ class TestOutputShapes:
     def test_red_zone_shape(self):
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
-        result = run_l08(GRID, combined, hard_ex)
+        result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
         assert result.red_zone.shape == (GRID.height, GRID.width)
 
     def test_risk_tier_shape(self):
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), False, dtype=bool)
-        result = run_l08(GRID, combined, hard_ex)
+        result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
         assert result.risk_tier.shape == (GRID.height, GRID.width)
 
 
@@ -449,7 +496,7 @@ class TestHardExclusionPrecedence:
         """H=0.5 is LOWER_RISK, but hard_exclusion=True forces RED."""
         combined = np.full((2, 2), 0.5, dtype=np.float32)
         hard_ex = np.full((2, 2), True, dtype=bool)
-        result = run_l08(GRID, combined, hard_ex)
+        result = run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=HE_METADATA)
         assert result.red_zone.all()
         assert (result.risk_tier == RiskTier.RED.value).all()
         for rec in result.records:
