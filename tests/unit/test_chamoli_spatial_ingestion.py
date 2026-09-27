@@ -9,11 +9,11 @@ from scripts.ingest_chamoli_spatial import (
 )
 
 
-def _soi(rows):
+def _soi(rows, crs="EPSG:4326"):
     return gpd.GeoDataFrame(
         rows,
         geometry=[Polygon([(0, 0), (1, 0), (1, 1), (0, 0)]) for _ in rows],
-        crs="EPSG:4326",
+        crs=crs,
     )
 
 
@@ -62,27 +62,7 @@ def test_matches_census_to_soi_by_village_code_not_name():
     assert len(soi_unmatched) == 0
 
 
-def test_missing_soi_crs_is_rejected():
-    soi = _soi(
-        [
-            {
-                "STATE_LGD": "05",
-                "Dist_LGD": "057",
-                "District": "CHAMOLI",
-                "Sub_dist": "JOSHIMATH",
-                "Vill_name": "MANA",
-                "Vill_Cat": "RURAL",
-                "Vill_LGD": "040808",
-            }
-        ]
-    ).set_crs(None, allow_override=True)
-
-    with pytest.raises(ValueError, match="CRS is missing"):
-        load_soi_rural_boundaries_from_frame(soi)
-
-
 def test_duplicate_soi_village_codes_are_rejected(tmp_path):
-    # Write a tiny shapefile to exercise the real reader validation path.
     soi = _soi(
         [
             {
@@ -112,7 +92,7 @@ def test_duplicate_soi_village_codes_are_rejected(tmp_path):
         load_soi_rural_boundaries(shp)
 
 
-def test_non_rural_soi_rows_are_excluded():
+def test_non_rural_soi_rows_are_excluded(tmp_path):
     soi = _soi(
         [
             {
@@ -135,32 +115,31 @@ def test_non_rural_soi_rows_are_excluded():
             },
         ]
     )
+    shp = tmp_path / "boundaries.shp"
+    soi.to_file(shp)
 
-    result = load_soi_rural_boundaries_from_frame(soi)
+    result = load_soi_rural_boundaries(shp)
     assert len(result) == 1
     assert result.iloc[0]["Vill_LGD"] == "040808"
 
 
-def load_soi_rural_boundaries_from_frame(gdf):
-    required = {
-        "STATE_LGD",
-        "Dist_LGD",
-        "District",
-        "Sub_dist",
-        "Vill_name",
-        "Vill_Cat",
-        "Vill_LGD",
-        "geometry",
-    }
-    missing = required - set(gdf.columns)
-    assert not missing
-    selected = gdf[
-        gdf["STATE_LGD"].astype(str).eq("05")
-        & gdf["Dist_LGD"].astype(str).eq("057")
-        & gdf["Vill_Cat"].astype(str).str.upper().eq("RURAL")
-    ].copy()
-    if selected.crs is None:
-        raise ValueError("SOI boundary CRS is missing; spatial reprojection is unsafe.")
-    if selected["Vill_LGD"].duplicated().any():
-        raise ValueError("Duplicate SOI rural Vill_LGD identifiers detected")
-    return selected
+def test_missing_soi_crs_is_rejected(tmp_path):
+    soi = _soi(
+        [
+            {
+                "STATE_LGD": "05",
+                "Dist_LGD": "057",
+                "District": "CHAMOLI",
+                "Sub_dist": "JOSHIMATH",
+                "Vill_name": "MANA",
+                "Vill_Cat": "RURAL",
+                "Vill_LGD": "040808",
+            }
+        ],
+        crs=None,
+    )
+    shp = tmp_path / "boundaries.shp"
+    soi.to_file(shp)
+
+    with pytest.raises(ValueError, match="CRS is missing"):
+        load_soi_rural_boundaries(shp)
