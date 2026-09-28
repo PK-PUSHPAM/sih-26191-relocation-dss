@@ -139,6 +139,17 @@ function CommandCenter({ go }) {
         </button>;
       }) : <Empty icon="⌖" title="Priority outputs not populated" text="Connect L12 priority outputs to populate the response queue." />}
     </div>
+    <div className="habitation-feature">
+      <div className="habitation-feature-head">
+        <div><span className="eyebrow">L09 + L12 · VULNERABILITY & PRIORITY</span><h2>Vulnerable Habitations</h2><p>See exposed populations, vulnerability scores and relocation priority in one operational register.</p></div>
+        <button className="primary" onClick={() => go("habitations")}>Open habitation register <span>→</span></button>
+      </div>
+      <div className="habitation-feature-stats">
+        <div><b>{fmt(hRows.length)}</b><span>REGISTERED HABITATIONS</span></div>
+        <div><b>{fmt(immediate)}</b><span>IMMEDIATE / SHORT-TERM</span></div>
+        <div><b>{fmt(population)}</b><span>POPULATION COVERAGE</span></div>
+      </div>
+    </div>
     <div className="feature-strip">
       <button onClick={() => go("ml")}><span>✦</span><div><b>AI-assisted susceptibility</b><small>Spatially validated ML framework · deterministic safety fallback</small></div><em>Explore →</em></button>
       <button onClick={() => go("sites")}><span>◇</span><div><b>Relocation readiness</b><small>Suitability → capacity → allocation</small></div><em>Explore →</em></button>
