@@ -87,3 +87,27 @@ def test_provenance_metadata():
     assert result.metadata["model_version"] == "L12-relocation-priority-1.0"
     assert result.metadata["formula_version"] == "RP-0.40-0.25-0.20-0.10-0.05"
     assert result.metadata["source_metadata"]["risk_source"] == "L08"
+
+def test_duplicate_habitation_ids_are_rejected():
+    with pytest.raises(L12Error, match="must be unique"):
+        run_l12([habitation(), habitation(habitation_id="H1")])
+
+def test_malformed_weights_are_rejected():
+    with pytest.raises(L12Error):
+        run_l12([habitation()], weights={"risk":"0.40"})
+
+def test_malformed_thresholds_are_rejected():
+    with pytest.raises(L12Error):
+        run_l12([habitation()], thresholds={"immediate_min":0.75})
+
+def test_non_mapping_source_metadata_is_rejected():
+    with pytest.raises(L12Error, match="source_metadata"):
+        run_l12([habitation()], source_metadata=["bad"])
+
+def test_timestamp_type_is_rejected():
+    with pytest.raises(L12Error, match="must be a datetime"):
+        run_l12([habitation()], execution_timestamp="2026-09-28T00:00:00Z")
+
+def test_non_habitation_input_is_rejected():
+    with pytest.raises(L12Error, match="PriorityHabitationInput"):
+        run_l12([{"habitation_id":"H1"}])
