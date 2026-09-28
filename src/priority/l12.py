@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 import math
+from numbers import Real
 from typing import Any, Mapping, Sequence
 
 
@@ -80,7 +81,7 @@ class L12Result:
 
 
 def _valid_score(value: Any) -> bool:
-    return (isinstance(value, (int, float)) and not isinstance(value, bool)
+    return (isinstance(value, Real) and not isinstance(value, bool)
             and math.isfinite(float(value)) and 0.0 <= float(value) <= 1.0)
 
 
@@ -90,10 +91,19 @@ def _valid_population(value: Any) -> bool:
 
 def _validate_frozen_parameters(weights: Mapping[str, float] | None,
                                  thresholds: Mapping[str, float] | None) -> None:
-    if weights is not None and dict(weights) != WEIGHTS:
-        raise L12Error("L12 weights are frozen by the project specification")
-    if thresholds is not None and dict(thresholds) != TIER_THRESHOLDS:
-        raise L12Error("L12 tier thresholds are frozen by the project specification")
+    for name, supplied, expected in (("weights", weights, WEIGHTS), ("thresholds", thresholds, TIER_THRESHOLDS)):
+        if supplied is None:
+            continue
+        if not isinstance(supplied, Mapping):
+            raise L12Error(f"L12 {name} must be a mapping")
+        if set(supplied) != set(expected):
+            raise L12Error(f"L12 {name} keys do not match the frozen specification")
+        for key, expected_value in expected.items():
+            value = supplied[key]
+            if isinstance(value, bool) or not isinstance(value, Real):
+                raise L12Error(f"L12 {name}[{key}] must be numeric")
+            if not math.isfinite(float(value)) or float(value) != expected_value:
+                raise L12Error(f"L12 {name}[{key}] does not match the frozen specification")
 
 
 def _tier(score: float) -> PriorityTier:
@@ -107,8 +117,8 @@ def _tier(score: float) -> PriorityTier:
 
 
 def _record(item: PriorityHabitationInput) -> PriorityRecord:
-    if not item.habitation_id:
-        raise L12Error("habitation_id is required")
+    if not isinstance(item.habitation_id, str) or not item.habitation_id.strip():
+        raise L12Error("habitation_id must be a non-empty string")
     raw = {
         "risk": item.risk, "exposed_pop_score": item.exposed_pop_score,
         "vulnerability": item.vulnerability,
@@ -169,14 +179,28 @@ def run_l12(habitations: Sequence[PriorityHabitationInput], *,
     exposed_pop_score as an already-derived [0,1] input and does not invent
     a normalization function.
     """
+    if habitations is None:
+        raise L12Error("habitations input is required")
     _validate_frozen_parameters(weights, thresholds)
     if execution_timestamp is None:
         timestamp = datetime.now(timezone.utc)
-    elif execution_timestamp.tzinfo is None or execution_timestamp.utcoffset() is None:
-        raise L12Error("execution_timestamp must be timezone-aware")
     else:
+        if not isinstance(execution_timestamp, datetime):
+            raise L12Error("execution_timestamp must be a datetime")
+        if execution_timestamp.tzinfo is None or execution_timestamp.utcoffset() is None:
+            raise L12Error("execution_timestamp must be timezone-aware")
         timestamp = execution_timestamp
-    records = tuple(_record(item) for item in habitations)
+    if source_metadata is not None and not isinstance(source_metadata, Mapping):
+        raise L12Error("source_metadata must be a mapping")
+    items = tuple(habitations)
+    if any(not isinstance(item, PriorityHabitationInput) for item in items):
+        raise L12Error("habitations entries must be PriorityHabitationInput")
+    ids = [item.habitation_id for item in items]
+    if any(not isinstance(value, str) or not value.strip() for value in ids):
+        raise L12Error("habitation_id must be a non-empty string")
+    if len(ids) != len(set(ids)):
+        raise L12Error("habitation_id values must be unique")
+    records = tuple(_record(item) for item in items)
     return L12Result(
         records=records,
         metadata={
