@@ -145,7 +145,7 @@ def test_score_is_bounded_at_zero_and_one():
         slope_score=0.0, road_score=0.0, water_score=0.0,
         health_score=0.0, education_score=0.0, land_use_score=0.0, services_score=0.0,
     )
-    one = make_candidate(combined_risk=0.0)
+    one = make_candidate(site_id="S2", combined_risk=0.0)
     result = run_l10([zero, one])
     assert result.records[0].suitability == 0.0
     assert result.records[1].suitability == 1.0
