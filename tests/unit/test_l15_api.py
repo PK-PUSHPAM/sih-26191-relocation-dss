@@ -21,6 +21,7 @@ def test_openapi_contains_versioned_routes():
         "/api/v1/habitations",
         "/api/v1/habitations/{habitation_id}",
         "/api/v1/hazards",
+        "/api/v1/ml/status",
         "/api/v1/risk/map",
         "/api/v1/sites",
         "/api/v1/sites/{site_id}/capacity",
@@ -121,3 +122,13 @@ def test_optimize_executes_and_returns_contract(monkeypatch):
 def test_non_string_habitation_path_rejected():
     client = TestClient(app)
     assert client.get("/api/v1/habitations/%20").status_code in {400,404}
+
+def test_ml_status_is_assistive_and_non_fabricated():
+    client = TestClient(app)
+    response = client.get("/api/v1/ml/status")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["authoritative"] is False
+    assert payload["role"] == "assistive susceptibility signal"
+    assert payload["status"] in {"NOT_TRAINED", "READY_TO_TRAIN", "BLOCKED"}
+    assert payload["training_rows"] >= 0
