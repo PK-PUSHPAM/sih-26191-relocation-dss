@@ -103,7 +103,9 @@ def test_optimize_executes_and_returns_contract(monkeypatch):
         allocations = ()
         unmet = ()
         metadata = {"database_write": False}
-    monkeypatch.setattr("src.api.app.run_l13", lambda *args, **kwargs: FakeResult())
+    import importlib
+    api_module = importlib.import_module("src.api.app")
+    monkeypatch.setattr(api_module, "run_l13", lambda *args, **kwargs: FakeResult())
     client = TestClient(app)
     payload = {
         "habitations": [{"habitation_id": "H1", "exposed_population": 10}],
