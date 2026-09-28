@@ -9,9 +9,7 @@ import numpy as np
 import rasterio
 from rasterio.enums import Resampling
 from rasterio.mask import mask
-from rasterio.warp import reproject, calculate_default_transform
-from affine import Affine
-from shapely.geometry import Polygon, MultiPolygon
+from rasterio.warp import reproject
 import geopandas as gpd
 
 from src.common.crs import CANONICAL_PROJECTED_CRS_STR, CANONICAL_PROJECTED_CRS_EPSG
@@ -25,29 +23,31 @@ from src.spatial.grid import (
 
 class RasterProcessingError(Exception):
     """Base exception for raster processing errors."""
-    pass
 
 
 class RasterAlignmentError(RasterProcessingError):
     """Raised when two rasters fail alignment checks."""
-    pass
 
 
-# Type alias
+class MissingRasterCRSError(RasterProcessingError):
+    """Raised when a raster has no CRS definition."""
+
+
+class MissingRasterNoDataError(RasterProcessingError):
+    """Raised when a raster has no explicit nodata value."""
+
+
 RasterMetadata = Dict[str, Any]
 
 
 def inspect_raster_metadata(raster_path: Union[str, Path]) -> Dict[str, Any]:
-    """
-    Extract comprehensive spatial metadata from a GeoTIFF.
-    """
     p = Path(raster_path)
     if not p.exists():
         raise FileNotFoundError(f"Raster file not found: {p}")
 
     with rasterio.open(p) as src:
         crs_str = src.crs.to_string() if src.crs else None
-        meta = {
+        return {
             "file_path": str(p.as_posix()),
             "crs": crs_str,
             "width": src.width,
@@ -68,7 +68,17 @@ def inspect_raster_metadata(raster_path: Union[str, Path]) -> Dict[str, Any]:
             ],
             "is_tiled": src.profile.get("tiled", False),
         }
-    return meta
+
+
+def _require_explicit_metadata(src) -> None:
+    if src.crs is None:
+        raise MissingRasterCRSError(
+            "Raster CRS is missing; L03 will not guess or assume a CRS."
+        )
+    if src.nodata is None:
+        raise MissingRasterNoDataError(
+            "Raster nodata value is missing; L03 will not invent one."
+        )
 
 
 def validate_raster_alignment(
@@ -76,40 +86,24 @@ def validate_raster_alignment(
     raster_b_path: Union[str, Path],
     tolerance: float = 1e-4,
 ) -> Tuple[bool, List[str]]:
-    """
-    Verify whether two rasters share the exact same spatial grid:
-    1. Same CRS
-    2. Same pixel size (dx, dy)
-    3. Same dimensions (width, height)
-    4. Same upper-left grid origin (transform.c, transform.f)
-    5. Zero rotation (transform.b, transform.d)
-    Returns (is_aligned, list_of_discrepancies).
-    """
     meta_a = inspect_raster_metadata(raster_a_path)
     meta_b = inspect_raster_metadata(raster_b_path)
-
     issues: List[str] = []
 
-    # 1. CRS
     if meta_a["crs"] != meta_b["crs"]:
         issues.append(f"CRS mismatch: {meta_a['crs']} vs {meta_b['crs']}")
-
-    # 2. Dimensions
     if meta_a["width"] != meta_b["width"] or meta_a["height"] != meta_b["height"]:
         issues.append(
-            f"Dimension mismatch: ({meta_a['width']}x{meta_a['height']}) vs ({meta_b['width']}x{meta_b['height']})"
+            f"Dimension mismatch: ({meta_a['width']}x{meta_a['height']}) vs "
+            f"({meta_b['width']}x{meta_b['height']})"
         )
 
-    # 3. Transform origin and pixel size
     t_a = meta_a["transform"]
     t_b = meta_b["transform"]
-
     if abs(t_a[0] - t_b[0]) > tolerance or abs(t_a[4] - t_b[4]) > tolerance:
         issues.append(f"Pixel resolution mismatch: ({t_a[0]}, {t_a[4]}) vs ({t_b[0]}, {t_b[4]})")
-
     if abs(t_a[2] - t_b[2]) > tolerance or abs(t_a[5] - t_b[5]) > tolerance:
         issues.append(f"Origin (X, Y) mismatch: ({t_a[2]}, {t_a[5]}) vs ({t_b[2]}, {t_b[5]})")
-
     if abs(t_a[1]) > tolerance or abs(t_a[3]) > tolerance or abs(t_b[1]) > tolerance or abs(t_b[3]) > tolerance:
         issues.append("One or both rasters have non-zero rotation coefficients.")
 
@@ -121,27 +115,21 @@ def is_aligned_to_canonical_grid(
     grid_def: CanonicalGridDefinition,
     tolerance: float = 1e-4,
 ) -> Tuple[bool, List[str]]:
-    """
-    Check if a raster is strictly aligned to the canonical 30 m grid specification.
-    """
     meta = inspect_raster_metadata(raster_path)
     issues: List[str] = []
 
-    # Check CRS
     if meta["crs"] not in [grid_def.crs, f"EPSG:{CANONICAL_PROJECTED_CRS_EPSG}"]:
         issues.append(f"CRS '{meta['crs']}' does not match canonical grid CRS '{grid_def.crs}'")
-
-    # Check dimensions
     if meta["width"] != grid_def.width or meta["height"] != grid_def.height:
         issues.append(f"Dimensions ({meta['width']}, {meta['height']}) do not match grid ({grid_def.width}, {grid_def.height})")
 
-    # Check transform
     t = meta["transform"]
     if abs(t[0] - grid_def.resolution) > tolerance or abs(t[4] - (-grid_def.resolution)) > tolerance:
         issues.append(f"Resolution ({t[0]}, {t[4]}) does not match canonical resolution {grid_def.resolution}m")
-
     if abs(t[2] - grid_def.x_min) > tolerance or abs(t[5] - grid_def.y_max) > tolerance:
         issues.append(f"Origin ({t[2]}, {t[5]}) does not match canonical origin ({grid_def.x_min}, {grid_def.y_max})")
+    if abs(t[1]) > tolerance or abs(t[3]) > tolerance:
+        issues.append("Raster has non-zero rotation coefficients.")
 
     return len(issues) == 0, issues
 
@@ -153,12 +141,6 @@ def resample_and_align_raster(
     is_categorical: bool = False,
     output_nodata: Optional[float] = None,
 ) -> Path:
-    """
-    Reproject, resample, and align an input raster to the canonical 30m grid.
-    Resampling Policy:
-      - is_categorical=True: uses Nearest Neighbour (preserves discrete classes)
-      - is_categorical=False: uses Bilinear (smooth interpolation for elevation, rainfall, etc.)
-    """
     in_p = Path(input_raster_path)
     out_p = Path(output_raster_path)
     out_p.parent.mkdir(parents=True, exist_ok=True)
@@ -166,9 +148,12 @@ def resample_and_align_raster(
     resampling_method = Resampling.nearest if is_categorical else Resampling.bilinear
 
     with rasterio.open(in_p) as src:
-        src_nodata = src.nodata if src.nodata is not None else DEFAULT_NODATA_FLOAT
-        target_nodata = output_nodata if output_nodata is not None else src_nodata
+        _require_explicit_metadata(src)
 
+        if src.crs.to_epsg() is None:
+            raise MissingRasterCRSError(f"Raster CRS cannot be resolved to an EPSG code: {src.crs}")
+
+        target_nodata = output_nodata if output_nodata is not None else src.nodata
         destination = np.full(
             (grid_def.height, grid_def.width),
             target_nodata,
@@ -180,7 +165,7 @@ def resample_and_align_raster(
             destination=destination,
             src_transform=src.transform,
             src_crs=src.crs,
-            src_nodata=src_nodata,
+            src_nodata=src.nodata,
             dst_transform=grid_def.transform,
             dst_crs=grid_def.crs,
             dst_nodata=target_nodata,
@@ -197,7 +182,7 @@ def resample_and_align_raster(
             "count": 1,
             "dtype": destination.dtype,
             "nodata": target_nodata,
-            "compress": "deflate",
+            "compress": "lzw",
         })
 
         with rasterio.open(out_p, "w", **profile) as dst:
@@ -212,27 +197,26 @@ def mask_raster_with_vector(
     boundary_gdf: gpd.GeoDataFrame,
     nodata_value: Optional[float] = None,
 ) -> Path:
-    """
-    Clip and mask a raster using a vector boundary polygon.
-    Pixels whose centers fall outside the boundary are assigned nodata.
-    """
     in_p = Path(input_raster_path)
     out_p = Path(output_raster_path)
     out_p.parent.mkdir(parents=True, exist_ok=True)
 
+    if boundary_gdf.crs is None:
+        raise ValueError("Boundary CRS is missing; L03 will not guess or assume a CRS.")
+
     with rasterio.open(in_p) as src:
-        # Reproject boundary to match raster CRS if different
+        _require_explicit_metadata(src)
         boundary_proj = boundary_gdf.to_crs(src.crs)
         shapes = [geom for geom in boundary_proj.geometry if not geom.is_empty]
+        if not shapes:
+            raise ValueError("Boundary contains no non-empty geometries.")
 
         out_nodata = nodata_value if nodata_value is not None else src.nodata
-        if out_nodata is None:
-            out_nodata = DEFAULT_NODATA_FLOAT
 
-        masked_img, masked_transform = mask(
+        masked_img, _ = mask(
             src,
             shapes,
-            crop=False,  # Maintain grid dimensions and transform!
+            crop=False,
             nodata=out_nodata,
             filled=True,
         )
@@ -241,7 +225,7 @@ def mask_raster_with_vector(
         profile.update({
             "driver": "GTiff",
             "nodata": out_nodata,
-            "compress": "deflate",
+            "compress": "lzw",
         })
 
         with rasterio.open(out_p, "w", **profile) as dst:
