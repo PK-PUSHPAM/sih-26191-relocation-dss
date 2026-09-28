@@ -26,6 +26,7 @@ from src.hazards.landslide import (
     validate_weights,
     weighted_combine,
     write_landslide_hazard_raster,
+    _read_aligned_raster,
 )
 from src.spatial.grid import DEFAULT_NODATA_FLOAT, create_canonical_grid
 
@@ -206,3 +207,27 @@ def test_orchestration_fails_when_required_real_data_are_absent(tmp_path):
     grid = create_canonical_grid((500000, 3000000, 500060, 3000060))
     with pytest.raises(LandslideDataPendingError, match="Required L04 real inputs"):
         run_landslide_baseline({}, grid, tmp_path / "not_created.tif")
+
+def test_aligned_raster_requires_explicit_nodata(tmp_path):
+    grid = create_canonical_grid((500000, 3000000, 500060, 3000060))
+    raster = tmp_path / "aligned_without_nodata.tif"
+    with rasterio.open(
+        raster,
+        "w",
+        driver="GTiff",
+        height=grid.height,
+        width=grid.width,
+        count=1,
+        dtype="float32",
+        crs=grid.crs,
+        transform=grid.transform,
+    ) as dataset:
+        dataset.write(np.ones((grid.height, grid.width), dtype=np.float32), 1)
+    with pytest.raises(LandslideModelError, match="explicit NoData"):
+        _read_aligned_raster(raster, grid, categorical=False, workspace=tmp_path)
+
+
+def test_orchestration_rejects_unknown_input_names(tmp_path):
+    grid = create_canonical_grid((500000, 3000000, 500060, 3000060))
+    with pytest.raises(LandslideModelError, match="Unknown L04 input names"):
+        run_landslide_baseline({"bogus": tmp_path / "ignored.tif"}, grid, tmp_path / "not_created.tif")
