@@ -158,3 +158,35 @@ def test_missing_data_and_readiness(tmp_path):
     assert audit["real_data_available"] is False
     assert audit["flash_flood_supported"] is False
     assert all(not entry["present"] for entry in audit["datasets"].values())
+
+
+def test_run_rejects_unknown_input_names(tmp_path):
+    grid = create_canonical_grid((500000, 3000000, 500060, 3000060))
+    with pytest.raises(FloodModelError, match="Unknown L05 input names"):
+        run_flood_baseline({"bogus": tmp_path / "x"}, grid, tmp_path / "out.tif", max_distance_m=30.0)
+
+
+def test_hydrological_observations_reject_empty_and_missing_station_id():
+    empty = pd.DataFrame({"station_id": [], "timestamp": [], "discharge": []})
+    with pytest.raises(FloodModelError, match="empty"):
+        validate_hydrological_observations(empty)
+
+    missing_station = pd.DataFrame({
+        "station_id": ["S1", None],
+        "timestamp": ["2024-01-01T00:00:00Z", "2024-01-01T01:00:00Z"],
+        "discharge": [1.0, 2.0],
+    })
+    with pytest.raises(FloodModelError, match="station_id"):
+        validate_hydrological_observations(missing_station)
+
+
+def test_run_rejects_unknown_weight_names(tmp_path):
+    grid = create_canonical_grid((500000, 3000000, 500060, 3000060))
+    with pytest.raises(FloodModelError, match="Unknown L05 factor weights"):
+        run_flood_baseline(
+            {"study_area": tmp_path / "missing", "river_network": tmp_path / "missing2"},
+            grid,
+            tmp_path / "out.tif",
+            max_distance_m=30.0,
+            weights={"river_proximity": 1.0, "rainfall": 0.1},
+        )
