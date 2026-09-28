@@ -6,7 +6,7 @@ already-frozen L13 solver for an explicit optimization request.
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Mapping
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -196,7 +196,7 @@ def _distance_map(values: dict[str, float]) -> dict[tuple[str, str], float]:
     result = {}
     for key, value in values.items():
         parts = key.split("::", 1)
-        if len(parts) != 2:
+        if len(parts) != 2 or not parts[0].strip() or not parts[1].strip():
             raise HTTPException(
                 status_code=422,
                 detail="distance keys must use 'habitation_id::site_id'",
