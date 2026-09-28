@@ -4,10 +4,9 @@ Computes topographic slope (degrees) and aspect (degrees azimuth from North) fro
 using Horn's 3x3 finite-difference algorithm.
 """
 from pathlib import Path
-from typing import Tuple, Optional, Union
+from typing import Tuple, Union
 import numpy as np
 import rasterio
-from rasterio.transform import Affine
 
 from src.spatial.grid import DEFAULT_NODATA_FLOAT
 
@@ -19,15 +18,21 @@ def calculate_slope_and_aspect_arrays(
     nodata: float = DEFAULT_NODATA_FLOAT,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Compute slope (degrees) and aspect (degrees clockwise from North) from a 2D DEM elevation grid.
-    Uses Horn's 3x3 finite difference weighted kernel:
-      dz/dx = ((c + 2f + i) - (a + 2d + g)) / (8 * dx)
-      dz/dy = ((g + 2h + i) - (a + 2b + c)) / (8 * dy)
-    
-    Returns:
-      slope_deg: array of slope in degrees in range [0.0, 90.0].
-      aspect_deg: array of aspect in degrees in range [0.0, 360.0], with flat (-1.0) and nodata preserved.
+    Compute slope (degrees) and aspect (degrees clockwise from North) from a 2D DEM.
+
+    Uses Horn's 3x3 finite difference weighted kernel. NoData in any cell of
+    the 3x3 window propagates to both derived outputs.
+
+    Aspect is the downslope azimuth:
+      atan2(-dz/dx, -dz/dy)
+    where +x is East and +y is North. Thus North=0, East=90,
+    South=180, West=270. Flat terrain receives -1.
     """
+    if dem.ndim != 2:
+        raise ValueError(f"DEM must be a 2D array, got {dem.ndim} dimensions.")
+    if dx <= 0 or dy <= 0:
+        raise ValueError(f"DEM cell sizes must be positive; got dx={dx}, dy={dy}.")
+
     rows, cols = dem.shape
     slope = np.full((rows, cols), nodata, dtype=np.float32)
     aspect = np.full((rows, cols), nodata, dtype=np.float32)
@@ -35,13 +40,12 @@ def calculate_slope_and_aspect_arrays(
     if rows < 3 or cols < 3:
         return slope, aspect
 
-    # Valid mask for nodata handling
     if np.isnan(nodata):
         valid = ~np.isnan(dem)
     else:
         valid = (dem != nodata) & (~np.isnan(dem))
 
-    # Extract 3x3 window slices
+    # 3x3 window:
     # a b c
     # d e f
     # g h i
@@ -49,55 +53,35 @@ def calculate_slope_and_aspect_arrays(
     b = dem[0:-2, 1:-1]
     c = dem[0:-2, 2:]
     d = dem[1:-1, 0:-2]
-    e = dem[1:-1, 1:-1]
     f = dem[1:-1, 2:]
     g = dem[2:, 0:-2]
     h = dem[2:, 1:-1]
     i = dem[2:, 2:]
 
-    # Window validity: center and all 8 neighbors must be valid
-    va = valid[0:-2, 0:-2]
-    vb = valid[0:-2, 1:-1]
-    vc = valid[0:-2, 2:]
-    vd = valid[1:-1, 0:-2]
-    ve = valid[1:-1, 1:-1]
-    vf = valid[1:-1, 2:]
-    vg = valid[2:, 0:-2]
-    vh = valid[2:, 1:-1]
-    vi = valid[2:, 2:]
+    all_valid = (
+        valid[0:-2, 0:-2]
+        & valid[0:-2, 1:-1]
+        & valid[0:-2, 2:]
+        & valid[1:-1, 0:-2]
+        & valid[1:-1, 2:]
+        & valid[2:, 0:-2]
+        & valid[2:, 1:-1]
+        & valid[2:, 2:]
+    )
 
-    all_valid = va & vb & vc & vd & ve & vf & vg & vh & vi
-
-    # Finite difference calculation
     dz_dx = ((c + 2.0 * f + i) - (a + 2.0 * d + g)) / (8.0 * dx)
     dz_dy = ((g + 2.0 * h + i) - (a + 2.0 * b + c)) / (8.0 * dy)
 
-    # Slope in radians and degrees
     gradient = np.sqrt(dz_dx**2 + dz_dy**2)
-    slope_rad = np.arctan(gradient)
-    slope_sub = np.degrees(slope_rad)
+    slope_sub = np.degrees(np.arctan(gradient))
 
-    # Aspect in degrees azimuth (0 to 360 clockwise from North)
-    # Downslope vector components: -dz/dx (East), -dz/dy (North)
-    # aspect_rad = atan2(-dz/dy, -dz/dx) gives angle from East counter-clockwise
-    # Standard geographic convention: 90 - atan2(dz/dy, -dz/dx) in degrees
-    aspect_rad = np.arctan2(dz_dy, -dz_dx)
-    aspect_sub = 90.0 - np.degrees(aspect_rad)
-    aspect_sub = np.where(aspect_sub < 0.0, aspect_sub + 360.0, aspect_sub)
-    aspect_sub = np.where(aspect_sub >= 360.0, aspect_sub - 360.0, aspect_sub)
-
-    # Flat areas where slope is 0 have undefined aspect (conventionally -1.0)
+    # Downslope vector = (-dz/dx East, -dz/dy North).
+    # Azimuth clockwise from North = atan2(East, North).
+    aspect_sub = np.degrees(np.arctan2(-dz_dx, -dz_dy)) % 360.0
     aspect_sub = np.where(slope_sub == 0.0, -1.0, aspect_sub)
 
-    # Assign only where all 9 cells are valid
-    interior_slope = slope[1:-1, 1:-1]
-    interior_aspect = aspect[1:-1, 1:-1]
-
-    interior_slope[all_valid] = slope_sub[all_valid]
-    interior_aspect[all_valid] = aspect_sub[all_valid]
-
-    slope[1:-1, 1:-1] = interior_slope
-    aspect[1:-1, 1:-1] = interior_aspect
+    slope[1:-1, 1:-1][all_valid] = slope_sub[all_valid]
+    aspect[1:-1, 1:-1][all_valid] = aspect_sub[all_valid]
 
     return slope, aspect
 
@@ -110,8 +94,9 @@ def generate_terrain_derivatives_raster(
 ) -> Tuple[Path, Path]:
     """
     Process an input DEM GeoTIFF and write aligned Slope and Aspect GeoTIFFs.
-    Slope is in degrees [0, 90].
-    Aspect is in degrees [0, 360], flat=-1.0.
+
+    The input DEM must have an explicit CRS and explicit nodata value.
+    L03 requires canonical EPSG:32644 and projected positive cell sizes.
     """
     dem_p = Path(dem_raster_path)
     slope_p = Path(output_slope_path)
@@ -121,15 +106,25 @@ def generate_terrain_derivatives_raster(
     aspect_p.parent.mkdir(parents=True, exist_ok=True)
 
     with rasterio.open(dem_p) as src:
+        if src.crs is None:
+            raise ValueError("DEM CRS is missing; L03 will not guess or assume a CRS.")
+        if src.crs.to_epsg() != 32644:
+            raise ValueError(f"DEM CRS must be EPSG:32644, got {src.crs}.")
+        if src.nodata is None:
+            raise ValueError("DEM nodata value is missing; L03 will not invent one.")
+        if src.res[0] <= 0 or src.res[1] <= 0:
+            raise ValueError(f"DEM resolution must be positive; got {src.res}.")
+        if src.count < 1:
+            raise ValueError("DEM contains no raster bands.")
+
         dem_data = src.read(1)
-        src_nodata = src.nodata if src.nodata is not None else nodata
         dx, dy = src.res[0], src.res[1]
 
         slope_arr, aspect_arr = calculate_slope_and_aspect_arrays(
             dem_data,
             dx=dx,
             dy=dy,
-            nodata=src_nodata,
+            nodata=src.nodata,
         )
 
         profile = src.profile.copy()
@@ -137,8 +132,8 @@ def generate_terrain_derivatives_raster(
             "driver": "GTiff",
             "dtype": np.float32,
             "count": 1,
-            "nodata": nodata,
-            "compress": "deflate",
+            "nodata": src.nodata,
+            "compress": "lzw",
         })
 
         with rasterio.open(slope_p, "w", **profile) as dst_slope:
