@@ -504,3 +504,27 @@ class TestHardExclusionPrecedence:
             assert rec.risk_tier == RiskTier.RED
             assert rec.quality_flag == QualityState.COMPLETE
             assert np.isclose(rec.combined_risk, 0.5, atol=1e-6)
+
+
+@pytest.mark.parametrize(
+    "bad_meta",
+    [
+        {"source": "", "checksum": "sha256:abc", "timestamp": "2026-01-01T00:00:00+00:00"},
+        {"source": "test", "checksum": "", "timestamp": "2026-01-01T00:00:00+00:00"},
+        {"source": "test", "checksum": "sha256:abc", "timestamp": ""},
+        {"source": "test", "checksum": "sha256:abc", "timestamp": "not-a-timestamp"},
+        {"source": "test", "checksum": "sha256:abc", "timestamp": "2026-01-01T00:00:00"},
+    ],
+)
+def test_hard_exclusion_provenance_values_must_be_valid(bad_meta):
+    combined = np.full((2, 2), 0.5, dtype=np.float32)
+    hard_ex = np.full((2, 2), False, dtype=bool)
+    with pytest.raises(ValueError):
+        run_l08(GRID, combined, hard_ex, hard_exclusion_metadata=bad_meta)
+
+
+def test_l07_metadata_must_be_mapping_when_supplied():
+    combined = np.full((2, 2), 0.5, dtype=np.float32)
+    hard_ex = np.full((2, 2), False, dtype=bool)
+    with pytest.raises(ValueError, match="l07_metadata"):
+        run_l08(GRID, combined, hard_ex, l07_metadata=["not", "mapping"], hard_exclusion_metadata=HE_METADATA)
