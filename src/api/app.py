@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from src.db.session import get_db
 from src.optimization.l13 import CandidateSite, HabitationDemand, run_l13
+from ml.landslide_susceptibility import status as ml_status
 
 
 API_VERSION = "1.0"
@@ -95,6 +96,12 @@ def habitation_detail(habitation_id: str, session: Session = Depends(_db_session
     if row is None:
         raise HTTPException(status_code=404, detail="habitation not found")
     return dict(row)
+
+
+@router.get("/ml/status")
+def machine_learning_status():
+    """Expose ML readiness without fabricating a trained model or metrics."""
+    return ml_status().to_dict()
 
 
 @router.get("/hazards")
