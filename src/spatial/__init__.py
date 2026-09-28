@@ -24,6 +24,8 @@ from .vector import (
 from .raster import (
     RasterProcessingError,
     RasterAlignmentError,
+    MissingRasterCRSError,
+    MissingRasterNoDataError,
     inspect_raster_metadata,
     validate_raster_alignment,
     is_aligned_to_canonical_grid,
@@ -53,6 +55,8 @@ __all__ = [
     "clip_vector_to_study_area",
     "RasterProcessingError",
     "RasterAlignmentError",
+    "MissingRasterCRSError",
+    "MissingRasterNoDataError",
     "inspect_raster_metadata",
     "validate_raster_alignment",
     "is_aligned_to_canonical_grid",
