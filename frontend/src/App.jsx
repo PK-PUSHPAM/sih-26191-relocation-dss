@@ -1,768 +1,255 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { api, API_BASE } from "./api";
 import { downloadMarkdown, printReport } from "./export";
 import MapView from "./map/MapView";
 
-const SCREENS = [
-  ["overview", "Overview", "⌂"],
-  ["hazards", "Hazard Map", "◉"],
-  ["red-zones", "Red Zone Map", "△"],
-  ["habitations", "Habitation Risk", "⌖"],
-  ["sites", "Site Explorer", "◇"],
-  ["capacity", "Capacity Dashboard", "▦"],
+const NAV = [
+  ["overview", "Command Center", "⌂"],
+  ["hazards", "Hazard Intelligence", "◉"],
+  ["red-zones", "Red Zones", "△"],
+  ["habitations", "Vulnerable Habitations", "⌖"],
+  ["sites", "Relocation Sites", "◇"],
+  ["capacity", "Carrying Capacity", "▦"],
+  ["ml", "AI / ML Insights", "✦"],
   ["planner", "Relocation Planner", "⇄"],
-  ["allocations", "Allocation Results", "☷"],
-  ["methodology", "Methodology", "∑"],
-  ["reports", "Reports Export", "↥"],
+  ["allocations", "Allocation Results", "↗"],
+  ["methodology", "Decision Logic", "∑"],
+  ["reports", "Reports", "↥"],
 ];
 
-const SCREEN_INFO = Object.fromEntries(
-  SCREENS.map(([id, label, icon]) => [id, { label, icon }])
-);
-
-function useApi(loader) {
-  const [state, setState] = useState({
-    loading: true,
-    data: null,
-    error: null,
-  });
-
+function useRequest(loader, deps = []) {
+  const [state, setState] = useState({ loading: true, data: null, error: null });
   useEffect(() => {
-    let alive = true;
+    let active = true;
     setState({ loading: true, data: null, error: null });
-
-    loader()
-      .then((data) => {
-        if (alive) setState({ loading: false, data, error: null });
-      })
-      .catch((error) => {
-        if (alive) setState({ loading: false, data: null, error });
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, [loader]);
-
+    Promise.resolve().then(loader).then(data => {
+      if (active) setState({ loading: false, data, error: null });
+    }).catch(error => {
+      if (active) setState({ loading: false, data: null, error });
+    });
+    return () => { active = false; };
+  }, deps);
   return state;
 }
 
-function Panel({ title, children, actions, accent = "" }) {
-  return (
-    <section className={`panel ${accent}`}>
-      <div className="panel-head">
-        <h2>{title}</h2>
-        {actions}
-      </div>
-      {children}
-    </section>
-  );
+function rowsOf(data) {
+  if (Array.isArray(data)) return data;
+  return data?.items || data?.results || data?.features || [];
 }
-
-function State({ state }) {
-  if (state.loading) {
-    return (
-      <div className="state loading-state">
-        <span className="spinner" />
-        Loading authoritative backend data…
-      </div>
-    );
-  }
-
-  if (state.error) {
-    return (
-      <div className="state error">
-        Backend unavailable: {state.error.message}
-      </div>
-    );
-  }
-
-  return null;
+function propsOf(row) { return row?.properties || row || {}; }
+function fmt(value, digits = 2) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (typeof value === "number") return Number.isInteger(value) ? value.toLocaleString("en-IN") : value.toFixed(digits);
+  return value;
 }
+function tierClass(tier = "") { return tier.toLowerCase().replaceAll(" ", "-"); }
 
-function Metric({ label, value, icon, tone = "" }) {
+function Shell({ screen, setScreen, children }) {
+  const [mobile, setMobile] = useState(false);
+  const nav = (id) => { setScreen(id); setMobile(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
   return (
-    <div className={`metric ${tone}`}>
-      <div className="metric-icon">{icon}</div>
-      <div>
-        <span>{label}</span>
-        <strong>{value}</strong>
-      </div>
-    </div>
-  );
-}
-
-function PageIntro({ title, text }) {
-  return (
-    <div className="intro">
-      <div>
-        <div className="eyebrow">SIH 26191 · CHAMOLI DSS</div>
-        <h1>{title}</h1>
-        <p>{text}</p>
-      </div>
-      <div className="intro-status">
-        <span className="pulse" /> LIVE DATA
-        <br />
-        <small>Backend authoritative</small>
-      </div>
-    </div>
-  );
-}
-
-function JsonDetails({ data }) {
-  return (
-    <details className="raw-details">
-      <summary>View raw backend payload</summary>
-      <pre className="json">{JSON.stringify(data, null, 2)}</pre>
-    </details>
-  );
-}
-
-function DataTable({ data }) {
-  const rows = Array.isArray(data)
-    ? data
-    : data?.items || data?.results || [];
-
-  if (!Array.isArray(rows) || rows.length === 0) {
-    return (
-      <div className="empty-state">
-        <div className="empty-icon">◇</div>
-        <strong>No records available</strong>
-        <span>The backend returned no records for this view.</span>
-      </div>
-    );
-  }
-
-  const keys = [
-    ...new Set(
-      rows.flatMap((row) =>
-        row && typeof row === "object" ? Object.keys(row) : []
-      )
-    ),
-  ].slice(0, 6);
-
-  return (
-    <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            {keys.map((key) => (
-              <th key={key}>{key.replaceAll("_", " ")}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.slice(0, 50).map((row, index) => (
-            <tr key={index}>
-              {keys.map((key) => {
-                const value = row?.[key];
-                return (
-                  <td key={key}>
-                    {typeof value === "object"
-                      ? JSON.stringify(value)
-                      : String(value ?? "—")}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Overview() {
-  const state = useApi(React.useCallback(() => api.habitations(), []));
-  const count = Array.isArray(state.data)
-    ? state.data.length
-    : state.data?.items?.length ?? null;
-
-  return (
-    <>
-      <PageIntro
-        title="Decision Command Center"
-        text="A unified view of hazard exposure, vulnerable habitations, relocation sites and allocation decisions."
-      />
-      <State state={state} />
-
-      {state.data && (
-        <>
-          <div className="cards">
-            <Metric
-              icon="⌖"
-              label="Habitations in response"
-              value={count ?? "—"}
-            />
-            <Metric
-              icon="◉"
-              label="Analysis CRS"
-              value="EPSG:32644"
-              tone="gold"
-            />
-            <Metric
-              icon="●"
-              label="System status"
-              value="Operational"
-              tone="green"
-            />
-          </div>
-
-          <div className="overview-grid">
-            <Panel title="Operational posture" accent="accent-panel">
-              <div className="posture">
-                <div className="posture-ring">
-                  <span>LIVE</span>
-                </div>
-                <div>
-                  <h3>Decision support online</h3>
-                  <p>
-                    All scoring, capacity and optimization remain authoritative
-                    in the backend. The interface only visualizes and submits
-                    scenarios.
-                  </p>
-                  <div className="status-list">
-                    <span>● API connected</span>
-                    <span>● Data integrity preserved</span>
-                    <span>● No fabricated metrics</span>
-                  </div>
-                </div>
-              </div>
-            </Panel>
-
-            <Panel title="Habitation dataset" actions={<span className="section-tag">AUTHORITATIVE</span>}>
-              <DataTable data={state.data} />
-            </Panel>
-          </div>
-
-          <div className="command-strip">
-            <div><span className="strip-icon">◉</span><div><b>Hazard intelligence</b><small>Explore multi-hazard spatial layers</small></div><a href="#hazards">Open map →</a></div>
-            <div><span className="strip-icon red">△</span><div><b>Red-zone assessment</b><small>Review modeled risk classifications</small></div><a href="#red-zones">View zones →</a></div>
-            <div><span className="strip-icon gold">◇</span><div><b>Relocation planning</b><small>Evaluate candidate sites and capacity</small></div><a href="#sites">Explore sites →</a></div>
-          </div>
-        </>
-      )}
-    </>
-  );
-}
-
-function GeoScreen({ title, text, loader, mode }) {
-  const state = useApi(loader);
-
-  return (
-    <>
-      <PageIntro title={title} text={text} />
-      <State state={state} />
-
-      {state.data && (
-        <>
-          <div className="map-hero">
-            <div className="map-hero-main">
-              <MapView data={state.data} mode={mode} />
-              <div className="map-overlay">
-                <span className="map-live"><i /> LIVE LAYER</span>
-                <div className="map-title">{mode === "risk" ? "Risk classification" : "Multi-hazard intelligence"}</div>
-                <div className="map-subtitle">Backend-authoritative spatial visualization</div>
-              </div>
-              <div className="map-legend">
-                <b>LEGEND</b>
-                {mode === "risk" ? <><span><i className="legend red"/> Red zone</span><span><i className="legend amber"/> Amber</span><span><i className="legend green"/> Lower risk</span></> : <><span><i className="legend teal"/> Hazard layer</span><span><i className="legend white"/> Features</span></>}
-              </div>
-            </div>
-            <div className="map-side">
-              <div className="map-side-head"><span>SPATIAL STATUS</span><strong>LIVE</strong></div>
-              <div className="spatial-orb"><span>{mode === "risk" ? "RISK" : "HAZARD"}</span></div>
-              <h3>{mode === "risk" ? "Risk zone intelligence" : "Multi-hazard overview"}</h3>
-              <p>{mode === "risk" ? "Modeled red-zone and risk-tier classifications are rendered directly from the backend." : "Hazard features are rendered directly from the authoritative hazard API response."}</p>
-              <div className="map-side-stat"><span>Data source</span><b>Backend API</b></div>
-              <div className="map-side-stat"><span>Display CRS</span><b>EPSG:4326</b></div>
-              <details><summary>Inspect payload</summary><JsonDetails data={state.data}/></details>
-            </div>
-          </div>
-        </>
-      )}
-    </>
-  );
-}
-
-function Habitations() {
-  const state = useApi(React.useCallback(() => api.habitations(), []));
-  const rows = state.data?.features || state.data?.items || state.data?.results || [];
-  const riskCount = rows.filter((row) => {
-    const tier = row?.properties?.tier ?? row?.tier;
-    return tier === "Immediate" || tier === "Short-term";
-  }).length;
-
-  return (
-    <>
-      <PageIntro
-        title="Habitation Risk"
-        text="Inspect vulnerable habitations, exposure and backend-computed priority classifications."
-      />
-      <State state={state} />
-      {state.data && (
-        <>
-          <div className="cards">
-            <Metric icon="⌖" label="Habitations returned" value={rows.length} />
-            <Metric icon="△" label="Priority tiers present" value={riskCount} tone="gold" />
-            <Metric icon="●" label="Source" value="Backend API" tone="green" />
-          </div>
-          <div className="risk-grid">
-            {rows.length ? rows.slice(0, 24).map((feature, index) => {
-              const item = feature?.properties || feature;
-              const tier = item.tier || "Unclassified";
-              const tierClass = tier.toLowerCase().replaceAll(" ", "-");
-              return (
-                <article className="risk-card" key={item.habitation_id || index}>
-                  <div className="risk-card-top">
-                    <span className="risk-id">{item.habitation_id || "HABITATION"}</span>
-                    <span className={`tier-badge ${tierClass}`}>{tier}</span>
-                  </div>
-                  <h3>{item.name || "Unnamed habitation"}</h3>
-                  <div className="risk-card-metrics">
-                    <div><span>Population</span><b>{item.population ?? "—"}</b></div>
-                    <div><span>Vulnerability</span><b>{item.vulnerability ?? "—"}</b></div>
-                    <div><span>Priority score</span><b>{item.priority_score ?? "—"}</b></div>
-                    <div><span>Population year</span><b>{item.population_year ?? "—"}</b></div>
-                  </div>
-                  <div className="risk-card-footer"><span>Admin unit</span><b>{item.admin_unit_id ?? "—"}</b></div>
-                </article>
-              );
-            }) : <div className="empty-state wide-empty"><div className="empty-icon">⌖</div><strong>No habitation records</strong><span>Import or connect the authoritative habitation dataset to populate this workspace.</span></div>}
-          </div>
-          <Panel title="Backend record detail" actions={<span className="section-tag">RAW / AUDIT</span>}>
-            <DataTable data={state.data} />
-            <JsonDetails data={state.data} />
-          </Panel>
-        </>
-      )}
-    </>
-  );
-}
-
-function Sites() {
-  const state = useApi(React.useCallback(() => api.sites(), []));
-  const rows = state.data?.features || state.data?.items || state.data?.results || [];
-
-  return (
-    <>
-      <PageIntro
-        title="Site Explorer"
-        text="Explore candidate relocation sites and backend-computed suitability information."
-      />
-      <State state={state} />
-      {state.data && (
-        <>
-          <div className="cards">
-            <Metric icon="◇" label="Candidate sites" value={rows.length} />
-            <Metric icon="◎" label="Suitability source" value="L10" tone="gold" />
-            <Metric icon="●" label="Status" value="Backend authoritative" tone="green" />
-          </div>
-          <div className="site-grid">
-            {rows.length ? rows.slice(0, 24).map((feature, index) => {
-              const item = feature?.properties || feature;
-              const suitability = item.suitability;
-              const status = item.status || "Unspecified";
-              return (
-                <article className="site-card" key={item.site_id || index}>
-                  <div className="site-card-top">
-                    <span className="site-id">{item.site_id || "SITE"}</span>
-                    <span className="status-badge">{status}</span>
-                  </div>
-                  <div className="site-visual"><span>◇</span><small>CANDIDATE SITE</small></div>
-                  <div className="site-card-body">
-                    <div><span>Area</span><b>{item.area ?? "—"}</b></div>
-                    <div><span>Suitability</span><b>{suitability ?? "—"}</b></div>
-                  </div>
-                  <div className="site-explain">{item.explanation_json ? "Backend explanation available" : "No explanation payload available"}</div>
-                </article>
-              );
-            }) : <div className="empty-state wide-empty"><div className="empty-icon">◇</div><strong>No candidate sites</strong><span>Candidate-site outputs will appear here when the backend dataset is available.</span></div>}
-          </div>
-          <Panel title="Site records" actions={<span className="section-tag">AUTHORITATIVE</span>}>
-            <DataTable data={state.data} />
-            <JsonDetails data={state.data} />
-          </Panel>
-        </>
-      )}
-    </>
-  );
-}
-
-function Capacity() {
-  const [id, setId] = useState("");
-  const [state, setState] = useState(null);
-
-  const loadCapacity = () => {
-    if (!id.trim()) return;
-    setState({ loading: true });
-    api.siteCapacity(id.trim()).then((data) => setState({ data })).catch((error) => setState({ error }));
-  };
-
-  return (
-    <>
-      <PageIntro
-        title="Capacity Dashboard"
-        text="Inspect the five capacity components, effective capacity and the backend-identified binding bottleneck."
-      />
-      <Panel title="Site capacity lookup" actions={<span className="section-tag">L11 OUTPUT</span>}>
-        <div className="lookup-box">
-          <div><span className="lookup-icon">▦</span><div><b>Capacity intelligence</b><small>Enter a candidate site ID to retrieve authoritative capacity outputs.</small></div></div>
-          <div className="form-row">
-            <input value={id} onChange={(event) => setId(event.target.value)} onKeyDown={(event) => event.key === "Enter" && loadCapacity()} placeholder="e.g. SITE-001" />
-            <button onClick={loadCapacity}>Inspect capacity →</button>
-          </div>
-        </div>
-
-        {state?.loading && <div className="state loading-state"><span className="spinner" />Loading capacity output…</div>}
-        {state?.error && <div className="state error">{state.error.message}</div>}
-
-        {state?.data && (
-          <div className="capacity-result">
-            <div className="capacity-hero">
-              <div><span>Effective capacity</span><strong>{state.data.effective_cap ?? "—"}</strong><small>persons / backend output</small></div>
-              <div className="bottleneck"><span>Binding bottleneck</span><b>{state.data.binding_bottleneck ?? "—"}</b></div>
-            </div>
-            <div className="capacity-grid">
-              {[
-                ["land_cap","LAND"],["water_cap","WATER"],["sanitation_cap","SANITATION"],
-                ["health_cap","HEALTH"],["access_cap","ACCESS"],
-              ].map(([key,label]) => (
-                <div className="capacity-item" key={key}>
-                  <span>{label}</span><strong>{state.data[key] ?? "—"}</strong><small>authoritative output</small>
-                </div>
-              ))}
-            </div>
-            <div className="capacity-meta"><span>Site <b>{state.data.site_id ?? id}</b></span><span>Suitability <b>{state.data.suitability ?? "—"}</b></span><span>Status <b>{state.data.status ?? "—"}</b></span></div>
-            <JsonDetails data={state.data} />
-          </div>
-        )}
-      </Panel>
-    </>
-  );
-}
-
-function Planner({ onResult }) {
-  const [payload, setPayload] = useState(
-    '{"habitations":[],"sites":[],"distances":{},"distance_weight":1,"unmet_penalty":1,"hazard_weight":0}'
-  );
-  const [state, setState] = useState(null);
-
-  const runOptimization = () => {
-    try {
-      setState({ loading: true });
-
-      api
-        .optimize(JSON.parse(payload))
-        .then((data) => {
-          setState({ data });
-          onResult(data);
-        })
-        .catch((error) => setState({ error }));
-    } catch (error) {
-      setState({ error });
-    }
-  };
-
-  return (
-    <>
-      <PageIntro
-        title="Relocation Planner"
-        text="Build and submit an optimization scenario. L13 remains the sole optimization authority."
-      />
-
-      <Panel title="Scenario configuration">
-        <div className="planner-note">
-          <span>⚡</span>
-          <div>
-            <strong>Backend optimization</strong>
-            <small>No allocation is calculated in the browser.</small>
-          </div>
-        </div>
-
-        <textarea
-          value={payload}
-          onChange={(event) => setPayload(event.target.value)}
-        />
-
-        <button onClick={runOptimization}>
-          Run optimization <span>→</span>
-        </button>
-
-        {state?.loading && (
-          <div className="state loading-state">
-            <span className="spinner" />
-            Running backend optimization…
-          </div>
-        )}
-
-        {state?.error && (
-          <div className="state error">{state.error.message}</div>
-        )}
-
-        {state?.data && (
-          <div className="result-card">
-            <JsonDetails data={state.data} />
-          </div>
-        )}
-      </Panel>
-    </>
-  );
-}
-
-function Allocations({ result }) {
-  return (
-    <>
-      <PageIntro
-        title="Allocation Results"
-        text="Review the most recent optimization response without recalculating allocations."
-      />
-
-      <Panel title="Scenario result">
-        {result ? (
-          <JsonDetails data={result} />
-        ) : (
-          <div className="empty-state">
-            <div className="empty-icon">⇄</div>
-            <strong>No optimization result yet</strong>
-            <span>
-              Run a scenario in Relocation Planner to populate this workspace.
-            </span>
-          </div>
-        )}
-      </Panel>
-    </>
-  );
-}
-
-function Methodology() {
-  const steps = [
-    ["01", "Hazard", "H = 0.45L + 0.35F + 0.20R"],
-    [
-      "02",
-      "Vulnerability",
-      "V = 0.35P + 0.25S + 0.20A + 0.10I + 0.10D",
-    ],
-    ["03", "Capacity", "floor(min(inputs) × 0.80)"],
-    [
-      "04",
-      "Priority",
-      "RP = 0.40 Risk + 0.25 Exposed Pop + 0.20 V + 0.10 Response Difficulty + 0.05 Recurrence",
-    ],
-  ];
-
-  const pipeline = [
-    "Hazard",
-    "Vulnerability",
-    "Risk",
-    "Site Suitability",
-    "Capacity",
-    "Priority",
-    "Allocation",
-  ];
-
-  return (
-    <>
-      <PageIntro
-        title="Methodology"
-        text="Transparent display of the frozen decision rules used by the decision-support pipeline."
-      />
-
-      <div className="method-grid">
-        {steps.map(([number, title, formula]) => (
-          <div className="method-card" key={number}>
-            <span>{number}</span>
-            <h3>{title}</h3>
-            <code>{formula}</code>
-          </div>
-        ))}
-      </div>
-
-      <Panel title="Decision pipeline">
-        <div className="pipeline">
-          {pipeline.map((step, index) => (
-            <React.Fragment key={step}>
-              <div>{step}</div>
-              {index < pipeline.length - 1 && <span>→</span>}
-            </React.Fragment>
-          ))}
-        </div>
-
-        <p className="muted">
-          The dashboard is visualization-only; authoritative scoring and
-          optimization execute in the backend.
-        </p>
-      </Panel>
-    </>
-  );
-}
-
-function Reports() {
-  const [id, setId] = useState("");
-  const [state, setState] = useState(null);
-
-  const loadReport = () => {
-    if (!id) return;
-
-    api
-      .report(id)
-      .then((data) => setState({ data }))
-      .catch((error) => setState({ error }));
-  };
-
-  return (
-    <>
-      <PageIntro
-        title="Reports Export"
-        text="Retrieve a backend decision report and export it for review or submission."
-      />
-
-      <Panel title="Run report">
-        <div className="form-row">
-          <input
-            value={id}
-            onChange={(event) => setId(event.target.value)}
-            placeholder="Enter run ID"
-          />
-          <button onClick={loadReport}>Load report</button>
-        </div>
-
-        {state?.error && (
-          <div className="state error">{state.error.message}</div>
-        )}
-
-        {state?.data && (
-          <>
-            <div className="actions">
-              <button onClick={() => downloadMarkdown(state.data)}>
-                Download Markdown
-              </button>
-              <button onClick={() => printReport(state.data)}>
-                Print / Save PDF
-              </button>
-            </div>
-            <JsonDetails data={state.data} />
-          </>
-        )}
-      </Panel>
-    </>
-  );
-}
-
-function App() {
-  const [screen, setScreen] = useState(
-    () => location.hash.slice(1) || "overview"
-  );
-  const [result, setResult] = useState(null);
-
-  useEffect(() => {
-    const handleHashChange = () =>
-      setScreen(location.hash.slice(1) || "overview");
-
-    addEventListener("hashchange", handleHashChange);
-    return () => removeEventListener("hashchange", handleHashChange);
-  }, []);
-
-  const content = useMemo(() => {
-    switch (screen) {
-      case "hazards":
-        return (
-          <GeoScreen
-            title="Hazard Map"
-            text="Multi-hazard spatial layers from the backend."
-            loader={api.hazards}
-            mode="hazards"
-          />
-        );
-      case "red-zones":
-        return (
-          <GeoScreen
-            title="Red Zone Map"
-            text="Risk cells and modeled red-zone classifications from the backend."
-            loader={api.riskMap}
-            mode="risk"
-          />
-        );
-      case "habitations":
-        return <Habitations />;
-      case "sites":
-        return <Sites />;
-      case "capacity":
-        return <Capacity />;
-      case "planner":
-        return <Planner onResult={setResult} />;
-      case "allocations":
-        return <Allocations result={result} />;
-      case "methodology":
-        return <Methodology />;
-      case "reports":
-        return <Reports />;
-      default:
-        return <Overview />;
-    }
-  }, [screen, result]);
-
-  const info = SCREEN_INFO[screen] || SCREEN_INFO.overview;
-
-  return (
-    <div className="app-shell">
-      <aside>
+    <div className="app">
+      <aside className={mobile ? "sidebar open" : "sidebar"}>
         <div className="brand">
-          <div className="brand-mark">◈</div>
-          <div>
-            <strong>HILL LAYER</strong>
-            <small>SIH 26191 · DSS</small>
-          </div>
+          <div className="brand-mark"><span>CH</span><i /></div>
+          <div><strong>CHAMOLI</strong><small>RESILIENCE DSS</small></div>
         </div>
-
-        <div className="nav-label">COMMAND CENTER</div>
-
+        <div className="project-chip"><span className="live-dot" /> SIH 26191 <b>PROTOTYPE</b></div>
         <nav>
-          {SCREENS.map(([id, label, icon]) => (
-            <a
-              key={id}
-              href={`#${id}`}
-              className={screen === id ? "active" : ""}
-            >
-              <span className="nav-icon">{icon}</span>
-              <span>{label}</span>
-              {screen === id && <i />}
-            </a>
+          <div className="nav-label">DECISION WORKSPACE</div>
+          {NAV.slice(0, 9).map(([id, label, icon]) => (
+            <button key={id} className={screen === id ? "active" : ""} onClick={() => nav(id)}>
+              <span className="nav-icon">{icon}</span><span>{label}</span>{screen === id && <em />}
+            </button>
           ))}
+          <div className="nav-label lower">OUTPUT & AUDIT</div>
+          <button className={screen === "reports" ? "active" : ""} onClick={() => nav("reports")}><span className="nav-icon">↥</span><span>Reports & Evidence</span>{screen === "reports" && <em />}</button>
         </nav>
-
-        <div className="side-status">
-          <span className="pulse" /> SYSTEM OPERATIONAL
-          <div>Decision support interface</div>
-        </div>
-
-        <div className="side-note">
-          Modeled decision support
-          <br />
-          Not a legal notification.
+        <div className="sidebar-bottom">
+          <div className="system-mini"><span className="live-dot" /><div><b>System operational</b><small>Backend authoritative</small></div></div>
+          <div className="crs-mini">PROCESSING CRS <strong>EPSG:32644</strong></div>
         </div>
       </aside>
-
       <main>
         <header>
-          <div className="breadcrumb">
-            <span>HILL LAYER</span>
-            <b>/</b>
-            {info.label}
-          </div>
-
-          <div className="header-actions">
-            <span className="live-pill">
-              <i /> BACKEND CONNECTED
-            </span>
-            <span className="api-label">{API_BASE}</span>
-          </div>
+          <button className="menu" onClick={() => setMobile(v => !v)}>☰</button>
+          <div className="crumb"><span>SIH 26191</span><b>/</b>{NAV.find(x => x[0] === screen)?.[1]}</div>
+          <div className="header-actions"><span className="api-pill"><i /> API CONNECTED</span><a href={API_BASE} target="_blank" rel="noreferrer">API ↗</a></div>
         </header>
-
-        <div className="content">{content}</div>
+        <div className="content">{children}</div>
+        <footer><span>CHAMOLI RESILIENCE DSS</span><span>Decision support · not a legal notification</span><span>SIH 26191 · L17 verified</span></footer>
       </main>
     </div>
   );
 }
 
-export default App;
+function Intro({ eyebrow = "DECISION SUPPORT", title, text, action }) {
+  return <div className="hero-intro">
+    <div><span className="eyebrow">{eyebrow}</span><h1>{title}</h1><p>{text}</p></div>
+    {action}
+  </div>;
+}
+
+function KPI({ icon, label, value, sub, tone = "" }) {
+  return <div className={"kpi " + tone}><div className="kpi-icon">{icon}</div><div><span>{label}</span><strong>{value}</strong>{sub && <small>{sub}</small>}</div></div>;
+}
+function Panel({ title, eyebrow, children, action }) {
+  return <section className="panel"><div className="panel-head"><div>{eyebrow && <span>{eyebrow}</span>}<h2>{title}</h2></div>{action}</div>{children}</section>;
+}
+function Loading({ text = "Loading authoritative data…" }) { return <div className="loading"><i />{text}</div>; }
+function ErrorBox({ error }) { return <div className="error-box"><b>Backend response unavailable</b><span>{error?.message || "Unknown error"}</span></div>; }
+function Empty({ icon = "◇", title = "No authoritative records", text = "The backend returned no records for this view." }) {
+  return <div className="empty"><div>{icon}</div><b>{title}</b><span>{text}</span></div>;
+}
+function Badge({ children, tone = "" }) { return <span className={"badge " + tone}>{children}</span>; }
+
+function CommandCenter({ go }) {
+  const state = useRequest(() => Promise.allSettled([api.habitations(), api.sites(), api.priorities(), api.hazards(), api.mlStatus()]), []);
+  if (state.loading) return <><Intro title="Command Center" text="Loading the Chamoli decision-support workspace…" /><Loading /></>;
+  if (state.error) return <><Intro title="Command Center" text="Unified operational view." /><ErrorBox error={state.error} /></>;
+  const [hab, sites, priorities, hazards, ml] = state.data.map(x => x.status === "fulfilled" ? x.value : null);
+  const hRows = rowsOf(hab), sRows = rowsOf(sites), pRows = rowsOf(priorities), hzRows = rowsOf(hazards);
+  const immediate = pRows.filter(x => propsOf(x).tier === "Immediate").length;
+  const population = hRows.reduce((n, x) => n + Number(propsOf(x).population || 0), 0);
+  return <>
+    <Intro eyebrow="CHAMOLI · DISTRICT RESPONSE WORKSPACE" title="Resilience Command Center"
+      text="From hazard intelligence to relocation allocation — one auditable workspace for vulnerable habitations and safer relocation planning."
+      action={<button className="primary" onClick={() => go("hazards")}>Open live map <span>→</span></button>} />
+    <div className="kpi-grid">
+      <KPI icon="⌖" label="Habitations" value={fmt(hRows.length)} sub="backend records" />
+      <KPI icon="△" label="Immediate priority" value={fmt(immediate)} sub="L12 tier" tone="red" />
+      <KPI icon="◇" label="Candidate sites" value={fmt(sRows.length)} sub="L10 outputs" tone="gold" />
+      <KPI icon="✦" label="AI / ML" value={ml?.status === "READY_TO_TRAIN" ? "READY" : "ASSISTIVE"} sub={ml?.status || "not trained"} tone="violet" />
+    </div>
+    <div className="dashboard-grid">
+      <Panel title="Spatial situation" eyebrow="LIVE GIS" action={<button className="ghost" onClick={() => go("red-zones")}>Open risk map ↗</button>}>
+        <div className="dashboard-map"><MapView data={apiMapFallback(hab)} mode="risk" /></div>
+      </Panel>
+      <Panel title="Response posture" eyebrow="SYSTEM STATUS">
+        <div className="posture-hero"><div className="radar"><span>LIVE</span></div><div><Badge tone="green">OPERATIONAL</Badge><h3>Decision pipeline online</h3><p>Backend remains the single source of truth. Scores are not recomputed in the browser.</p></div></div>
+        <div className="signal-list"><div><span>Data API</span><b>CONNECTED</b></div><div><span>Hazard layers</span><b>{hzRows.length ? hzRows.length + " REGISTERED" : "AWAITING INPUT"}</b></div><div><span>Population records</span><b>{population ? fmt(population) : "—"}</b></div><div><span>ML role</span><b>ASSISTIVE ONLY</b></div></div>
+      </Panel>
+    </div>
+    <div className="section-title"><span>PRIORITY QUEUE</span><h2>Habitations requiring attention</h2><button className="ghost" onClick={() => go("habitations")}>View all →</button></div>
+    <div className="priority-table">
+      {pRows.length ? pRows.slice(0, 6).map((row, i) => {
+        const p = propsOf(row); return <button key={p.habitation_id || i} className="priority-row" onClick={() => go("habitations")}>
+          <span className="rank">0{i + 1}</span><div><b>{p.name || p.habitation_id || "Habitation"}</b><small>{p.habitation_id || "ID unavailable"}</small></div>
+          <span className={"tier " + tierClass(p.tier)}>{p.tier || "Unclassified"}</span><strong>{fmt(p.priority_score)}</strong><span className="row-arrow">→</span>
+        </button>;
+      }) : <Empty icon="⌖" title="Priority outputs not populated" text="Connect L12 priority outputs to populate the response queue." />}
+    </div>
+    <div className="feature-strip">
+      <button onClick={() => go("ml")}><span>✦</span><div><b>AI-assisted susceptibility</b><small>Spatially validated ML framework · deterministic safety fallback</small></div><em>Explore →</em></button>
+      <button onClick={() => go("sites")}><span>◇</span><div><b>Relocation readiness</b><small>Suitability → capacity → allocation</small></div><em>Explore →</em></button>
+      <button onClick={() => go("methodology")}><span>∑</span><div><b>Auditable decision logic</b><small>Frozen weights, thresholds and provenance</small></div><em>Inspect →</em></button>
+    </div>
+  </>;
+}
+function apiMapFallback(hab) {
+  return hab?.type === "FeatureCollection" ? hab : { type: "FeatureCollection", features: [] };
+}
+
+function MapWorkspace({ mode = "hazards" }) {
+  const loader = useCallback(() => mode === "risk" ? api.riskMap() : api.hazards(), [mode]);
+  const state = useRequest(loader, [loader]);
+  const title = mode === "risk" ? "Red Zone Intelligence" : "Multi-Hazard Intelligence";
+  if (state.loading) return <><Intro eyebrow="GIS INTELLIGENCE" title={title} text="Loading backend spatial layers…" /><Loading /></>;
+  if (state.error) return <><Intro title={title} text="Backend spatial visualization." /><ErrorBox error={state.error} /></>;
+  return <><Intro eyebrow="GIS INTELLIGENCE · EPSG:4326 DISPLAY" title={title}
+    text={mode === "risk" ? "Inspect modeled risk tiers, hard exclusions and combined hazard outputs." : "Explore registered hazard layers and their provenance without changing authoritative scores."}
+    action={<Badge tone="green">● LIVE BACKEND LAYER</Badge>} />
+    <div className="map-workspace"><div className="big-map"><MapView data={state.data} mode={mode} /><div className="map-hud"><span>CHAMOLI</span><b>{mode === "risk" ? "COMBINED RISK" : "HAZARD STACK"}</b></div><div className="map-legend-box"><b>LEGEND</b>{mode === "risk" ? <><span><i className="dot red"/> Red zone ≥ 0.70</span><span><i className="dot amber"/> Amber 0.55–0.70</span><span><i className="dot green"/> Lower risk &lt; 0.55</span></> : <><span><i className="dot teal"/> Registered hazard features</span><span><i className="dot white"/> Other geometry</span></>}</div></div>
+      <aside className="map-inspector"><div className="inspector-top"><span>SPATIAL INSPECTOR</span><Badge tone="green">LIVE</Badge></div><div className="inspector-orb">{mode === "risk" ? "RISK" : "HAZARD"}</div><h3>{mode === "risk" ? "Decision layer" : "Hazard stack"}</h3><p>Rendered directly from the backend. The frontend does not invent or recalculate spatial scores.</p><div className="inspector-stat"><span>Display CRS</span><b>EPSG:4326</b></div><div className="inspector-stat"><span>Processing CRS</span><b>EPSG:32644</b></div><div className="inspector-stat"><span>Records</span><b>{rowsOf(state.data).length}</b></div><div className="inspector-note">⚡ Deterministic rules remain authoritative for safety decisions.</div></aside></div>
+  </>;
+}
+
+function Habitations() {
+  const state = useRequest(() => api.habitations("?limit=1000"), []);
+  if (state.loading) return <><Intro title="Vulnerable Habitations" text="Exposure, vulnerability and relocation priority in one place."/><Loading/></>;
+  if (state.error) return <><Intro title="Vulnerable Habitations" text="Population exposure and priority workspace."/><ErrorBox error={state.error}/></>;
+  const rows = rowsOf(state.data), immediate = rows.filter(x => ["Immediate","Short-term"].includes(propsOf(x).tier));
+  return <><Intro eyebrow="L09 + L12" title="Vulnerable Habitations" text="Move from a district-wide list to an explainable priority decision." action={<Badge>{rows.length} RECORDS</Badge>}/>
+    <div className="kpi-grid compact"><KPI icon="⌖" label="Records" value={fmt(rows.length)}/><KPI icon="!" label="Immediate + short" value={fmt(immediate.length)} tone="red"/><KPI icon="◌" label="Population coverage" value={fmt(rows.reduce((n,r)=>n+Number(propsOf(r).population||0),0))}/></div>
+    <Panel title="Priority register" eyebrow="BACKEND OUTPUT"><div className="table-shell"><table><thead><tr><th>HABITATION</th><th>POPULATION</th><th>VULNERABILITY</th><th>PRIORITY</th><th>TIER</th></tr></thead><tbody>{rows.slice(0,80).map((row,i)=>{const p=propsOf(row);return <tr key={p.habitation_id||i}><td><b>{p.name||"Unnamed habitation"}</b><small>{p.habitation_id||"—"}</small></td><td>{fmt(p.population)}</td><td>{fmt(p.vulnerability)}</td><td><strong>{fmt(p.priority_score)}</strong></td><td><span className={"tier "+tierClass(p.tier)}>{p.tier||"—"}</span></td></tr>})}</tbody></table>{!rows.length&&<Empty icon="⌖" title="No habitation outputs" text="Authoritative habitation data is present in the project; priority outputs may still await analytical inputs."/ >}</div></Panel>
+  </>;
+}
+
+function Sites() {
+  const state=useRequest(()=>api.sites(),[]);
+  if(state.loading)return <><Intro title="Relocation Sites" text="Find safer candidate sites and understand their suitability."/><Loading/></>;
+  if(state.error)return <><Intro title="Relocation Sites" text="Candidate site intelligence."/><ErrorBox error={state.error}/></>;
+  const rows=rowsOf(state.data);
+  return <><Intro eyebrow="L10 + L11" title="Relocation Site Explorer" text="Suitability is only the first gate — capacity and bottlenecks complete the relocation picture." action={<Badge tone="gold">{rows.length} CANDIDATES</Badge>}/>
+    <div className="site-layout"><div className="site-map"><MapView data={state.data} mode="sites"/></div><div className="site-list">{rows.length?rows.slice(0,18).map((row,i)=>{const p=propsOf(row);return <article className="site-item" key={p.site_id||i}><div className="site-head"><div><span>SITE {String(p.site_id||"—").slice(0,16)}</span><h3>Candidate relocation site</h3></div><Badge tone={p.status==="eligible"?"green":"gold"}>{p.status||"UNSPECIFIED"}</Badge></div><div className="site-metrics"><div><span>SUITABILITY</span><b>{fmt(p.suitability)}</b></div><div><span>AREA</span><b>{fmt(p.area)}</b></div></div><div className="site-foot"><span>Backend explanation {p.explanation_json?"available":"pending"}</span><button className="ghost">Inspect →</button></div></article>}) : <Empty icon="◇" title="No candidate sites" text="L10 candidate-site outputs will appear here when available."/>}</div></div>
+  </>;
+}
+
+function Capacity() {
+  const [id,setId]=useState(""); const [state,setState]=useState(null);
+  const inspect=()=>{if(!id.trim())return;setState({loading:true});api.siteCapacity(id.trim()).then(data=>setState({data})).catch(error=>setState({error}));};
+  return <><Intro eyebrow="L11 · BOTTLENECK ANALYSIS" title="Carrying Capacity" text="Understand how land, water, sanitation, health and access constrain a relocation site."/>
+    <Panel title="Inspect a candidate site" eyebrow="CAPACITY LOOKUP"><div className="lookup"><div><span className="lookup-icon">▦</span><div><b>Site capacity intelligence</b><small>Enter the exact site ID returned by the backend.</small></div></div><div className="lookup-row"><input value={id} onChange={e=>setId(e.target.value)} onKeyDown={e=>e.key==="Enter"&&inspect()} placeholder="SITE-001"/><button className="primary" onClick={inspect}>Inspect capacity →</button></div></div>
+    {state?.loading&&<Loading text="Loading capacity output…"/>}{state?.error&&<ErrorBox error={state.error}/>}
+    {state?.data&&<div className="capacity-result"><div className="capacity-main"><span>EFFECTIVE CAPACITY</span><strong>{fmt(state.data.effective_cap)}</strong><small>persons · backend output</small></div><div className="bottleneck-card"><span>BINDING BOTTLENECK</span><strong>{state.data.binding_bottleneck||"—"}</strong><small>limiting component</small></div><div className="capacity-bars">{[["Land",state.data.land_cap],["Water",state.data.water_cap],["Sanitation",state.data.sanitation_cap],["Health",state.data.health_cap],["Access",state.data.access_cap]].map(([n,v])=><div key={n}><div><span>{n}</span><b>{fmt(v)}</b></div><div className="bar"><i style={{width:v==null?"0%":Math.min(100,Math.max(4,Number(v)/Math.max(1,Number(state.data.effective_cap)||1)*55))+"%"}}/></div></div>)}</div></div>}</Panel></>;
+}
+
+function MLInsights() {
+  const state=useRequest(()=>api.mlStatus(),[]);
+  if(state.loading)return <><Intro eyebrow="AI / ML" title="Landslide Susceptibility Intelligence" text="Assistive machine learning, spatially validated and never allowed to override deterministic safety rules."/><Loading/></>;
+  if(state.error)return <><Intro title="AI / ML Insights" text="Assistive susceptibility framework."/><ErrorBox error={state.error}/></>;
+  const d=state.data;
+  return <><Intro eyebrow="AI / ML · ASSISTIVE LAYER" title="Landslide Susceptibility Intelligence" text="ML estimates susceptibility where authoritative labelled inventory supports training. Deterministic L07/L08 safety logic remains the final authority." action={<Badge tone="violet">RANDOM FOREST + BASELINE</Badge>}/>
+    <div className="ml-hero"><div className="ml-status-card"><div className="ai-orb">✦</div><div><span>MODEL STATUS</span><h2>{d.status?.replaceAll("_"," ")||"NOT TRAINED"}</h2><p>{d.message}</p></div></div><div className="ml-principle"><span>SAFETY PRINCIPLE</span><strong>ML assists. Rules decide.</strong><p>No ML probability can silently turn a safe cell into a legal red zone. L08 remains authoritative.</p></div></div>
+    <div className="ml-grid"><Panel title="Feature stack" eyebrow="MODEL INPUTS"><div className="feature-list">{(d.features||[]).map((x,i)=><div key={x}><span>{String(i+1).padStart(2,"0")}</span><b>{x.replaceAll("_"," ")}</b><em>feature</em></div>)}</div></Panel><Panel title="Validation protocol" eyebrow="SPATIAL CV"><div className="validation-list"><div><b>Random Forest</b><span>Primary baseline</span></div><div><b>Logistic Regression</b><span>Interpretable comparison</span></div><div><b>Spatial blocking</b><span>Prevents spatial leakage</span></div><div><b>Metrics</b><span>ROC-AUC · PR-AUC · calibration</span></div></div></Panel></div>
+    <Panel title="Current readiness" eyebrow="NO FABRICATED METRICS"><div className="readiness"><div><span>Training rows</span><strong>{fmt(d.training_rows)}</strong></div><div><span>Artifact</span><strong>{d.artifact||"Not promoted"}</strong></div><div><span>Role</span><strong>Assistive</strong></div><div><span>Authority</span><strong>Deterministic L07/L08</strong></div></div><div className="ml-note">⚠ Authoritative labelled landslide inventory is not currently present in the repository. Therefore the system deliberately shows readiness instead of inventing an accuracy score or prediction surface.</div></Panel>
+  </>;
+}
+
+function Planner({onResult}) {
+  const [payload,setPayload]=useState(JSON.stringify({habitations:[],sites:[],distances:{},distance_weight:1,unmet_penalty:1,hazard_weight:0},null,2)); const [state,setState]=useState(null);
+  const run=()=>{try{setState({loading:true});api.optimize(JSON.parse(payload)).then(d=>{setState({data:d});onResult(d)}).catch(e=>setState({error:e}))}catch(e){setState({error:e})}};
+  return <><Intro eyebrow="L13 · CP-SAT" title="Relocation Scenario Planner" text="Submit an explicit scenario to the backend optimizer. Nothing is calculated authoritatively inside the browser."/>
+    <div className="planner-grid"><Panel title="Scenario" eyebrow="INPUT"><div className="planner-callout"><span>⚡</span><div><b>Backend optimization only</b><small>Distances, capacities and feasibility must be explicitly supplied.</small></div></div><textarea value={payload} onChange={e=>setPayload(e.target.value)}/><button className="primary wide" onClick={run}>Run CP-SAT optimization <span>→</span></button>{state?.loading&&<Loading text="Solving allocation scenario…"/>}{state?.error&&<ErrorBox error={state.error}/>}</Panel><Panel title="What the solver optimizes" eyebrow="OBJECTIVE"><div className="formula-big">min ∑ distance × allocation + penalties</div><ul className="plain-list"><li>Exposure demand constraints</li><li>Site capacity constraints</li><li>Feasibility constraints</li><li>Unmet-demand penalty</li><li>Hazard penalty</li></ul>{state?.data&&<div className="solver-result"><Badge tone="green">{state.data.status}</Badge><strong>{fmt(state.data.objective_value)}</strong><span>objective value</span></div>}</Panel></div></>;
+}
+
+function Allocations({result}) {
+  const allocations=result?.allocations||[]; const unmet=result?.unmet||[];
+  return <><Intro eyebrow="L13 · DECISION OUTPUT" title="Allocation Results" text="Turn optimization output into an auditable relocation plan." action={result&&<Badge tone="green">SCENARIO READY</Badge>}/>
+    {!result?<Empty icon="⇄" title="No scenario has been solved" text="Run the Relocation Planner to populate allocation results."/>:<><div className="kpi-grid compact"><KPI icon="↗" label="Allocation records" value={fmt(allocations.length)}/><KPI icon="!" label="Unmet records" value={fmt(unmet.length)} tone={unmet.length?"red":"green"}/><KPI icon="∑" label="Objective" value={fmt(result.objective_value)}/></div><Panel title="Allocation register" eyebrow="SOLVER OUTPUT"><div className="table-shell"><table><thead><tr><th>HABITATION</th><th>SITE</th><th>ALLOCATED</th><th>DISTANCE</th></tr></thead><tbody>{allocations.map((a,i)=><tr key={i}><td>{a.habitation_id}</td><td>{a.site_id}</td><td><strong>{fmt(a.allocated_population)}</strong></td><td>{fmt(a.distance)}</td></tr>)}</tbody></table></div><details className="audit"><summary>View complete solver payload</summary><pre>{JSON.stringify(result,null,2)}</pre></details></Panel></>}</>;
+}
+
+function Methodology() {
+  const cards=[["01","MULTI-HAZARD","H = 0.45L + 0.35F + 0.20R","L07"],["02","RED ZONE","Hard exclusion OR H ≥ 0.70","L08"],["03","VULNERABILITY","V = 0.35P + 0.25S + 0.20A + 0.10I + 0.10D","L09"],["04","SITE SUITABILITY","Eight normalized criteria + hard exclusions","L10"],["05","CAPACITY","floor(min(land, water, sanitation, health, access) × 0.80)","L11"],["06","PRIORITY","Risk + exposed population + vulnerability + response + recurrence","L12"],["07","ALLOCATION","CP-SAT minimizes distance and unmet/hazard penalties","L13"]];
+  return <><Intro eyebrow="AUDITABLE DECISION LOGIC" title="How the DSS makes a decision" text="Every recommendation follows an explicit, reviewable rule. The frontend only explains and visualizes backend outputs."/>
+    <div className="pipeline">{cards.map(([n,t,f,l],i)=><React.Fragment key={n}><article><span>{n}</span><em>{l}</em><h3>{t}</h3><code>{f}</code></article>{i<cards.length-1&&<b>→</b>}</React.Fragment>)}</div>
+    <Panel title="Architecture guardrails" eyebrow="NON-NEGOTIABLE"><div className="guard-grid"><div><b>Backend authority</b><span>Frontend never recalculates authoritative metrics.</span></div><div><b>No silent missing data</b><span>Unavailable inputs remain unavailable instead of becoming zero.</span></div><div><b>ML is assistive</b><span>Susceptibility predictions cannot override deterministic safety rules.</span></div><div><b>Provenance</b><span>Sources, model versions and configuration are preserved for audit.</span></div></div></Panel>
+  </>;
+}
+
+function Reports() {
+  const [id,setId]=useState(""); const [state,setState]=useState(null);
+  const load=()=>{if(!id.trim())return;setState({loading:true});api.report(id.trim()).then(d=>setState({data:d})).catch(e=>setState({error:e}))};
+  return <><Intro eyebrow="AUDIT + EXPORT" title="Decision Reports" text="Generate a portable evidence package from a persisted backend run."/>
+    <Panel title="Report retrieval" eyebrow="RUN ID"><div className="lookup"><div><span className="lookup-icon">↥</span><div><b>Backend report endpoint</b><small>Reports are based on persisted model-run and allocation records.</small></div></div><div className="lookup-row"><input value={id} onChange={e=>setId(e.target.value)} placeholder="run UUID"/><button className="primary" onClick={load}>Load report →</button></div></div>
+    {state?.loading&&<Loading/>}{state?.error&&<ErrorBox error={state.error}/>}
+    {state?.data&&<><div className="report-actions"><button onClick={()=>downloadMarkdown(state.data)}>Download Markdown</button><button onClick={()=>printReport(state.data)}>Print / Save PDF</button></div><details className="audit" open><summary>Report payload</summary><pre>{JSON.stringify(state.data,null,2)}</pre></details></>}</Panel></>;
+}
+
+export default function App() {
+  const [screen,setScreen]=useState("overview"); const [result,setResult]=useState(null);
+  const go=id=>setScreen(id);
+  let page;
+  if(screen==="overview")page=<CommandCenter go={go}/>;
+  else if(screen==="hazards")page=<MapWorkspace/>;
+  else if(screen==="red-zones")page=<MapWorkspace mode="risk"/>;
+  else if(screen==="habitations")page=<Habitations/>;
+  else if(screen==="sites")page=<Sites/>;
+  else if(screen==="capacity")page=<Capacity/>;
+  else if(screen==="ml")page=<MLInsights/>;
+  else if(screen==="planner")page=<Planner onResult={setResult}/>;
+  else if(screen==="allocations")page=<Allocations result={result}/>;
+  else if(screen==="methodology")page=<Methodology/>;
+  else page=<Reports/>;
+  return <Shell screen={screen} setScreen={setScreen}>{page}</Shell>;
+}
