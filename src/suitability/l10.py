@@ -121,10 +121,23 @@ def _validate_optional_nonnegative(name: str, value: Optional[float]) -> Optiona
     return numeric
 
 def _validate_weights(weights: Optional[Mapping[str, float]]) -> Dict[str, float]:
-    selected = dict(SUITABILITY_WEIGHTS if weights is None else weights)
+    if weights is None:
+        return dict(SUITABILITY_WEIGHTS)
+    if not isinstance(weights, Mapping):
+        raise L10Error("L10 weights must be a mapping")
+    if set(weights) != set(SUITABILITY_WEIGHTS):
+        raise L10Error("L10 weights must exactly match the frozen suitability weight keys")
+    selected: Dict[str, float] = {}
+    for name, value in weights.items():
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+            raise L10Error(f"L10 weight {name!r} must be numeric")
+        numeric = float(value)
+        if not np.isfinite(numeric) or numeric < 0.0:
+            raise L10Error(f"L10 weight {name!r} must be finite and non-negative")
+        selected[name] = numeric
     if selected != SUITABILITY_WEIGHTS:
         raise L10Error("L10 weights must exactly match the frozen suitability weights")
-    if not np.isclose(sum(selected.values()), 1.0, atol=1e-12):
+    if sum(selected.values()) != 1.0:
         raise L10Error("L10 suitability weights must sum to 1.0")
     return selected
 
@@ -140,8 +153,23 @@ def run_l10(
 
     selected_weights = _validate_weights(weights)
     timestamp = execution_timestamp or datetime.now(timezone.utc)
+    if not isinstance(timestamp, datetime):
+        raise L10Error("L10 execution timestamp must be a datetime")
     if timestamp.tzinfo is None:
         raise L10Error("L10 execution timestamp must be timezone-aware")
+    if source_metadata is not None and not isinstance(source_metadata, Mapping):
+        raise L10Error("L10 source_metadata must be a mapping when supplied")
+
+    candidate_list = tuple(candidates)
+    candidate_ids = []
+    for idx, candidate in enumerate(candidate_list):
+        if not isinstance(candidate, SiteCandidateInput):
+            raise L10Error(f"candidates[{idx}] must be a SiteCandidateInput")
+        if not isinstance(candidate.site_id, str) or not candidate.site_id.strip():
+            raise L10Error("site_id must be a non-empty string")
+        candidate_ids.append(candidate.site_id)
+    if len(candidate_ids) != len(set(candidate_ids)):
+        raise L10Error("candidate site_id values must be unique")
 
     records: List[SiteSuitabilityRecord] = []
     score_fields = {
@@ -154,11 +182,7 @@ def run_l10(
         "service_proximity": "services_score",
     }
 
-    for idx, candidate in enumerate(tuple(candidates)):
-        if not isinstance(candidate, SiteCandidateInput):
-            raise L10Error(f"candidates[{idx}] must be a SiteCandidateInput")
-        if not isinstance(candidate.site_id, str) or not candidate.site_id.strip():
-            raise L10Error("site_id must be a non-empty string")
+    for idx, candidate in enumerate(candidate_list):
         if not isinstance(candidate.geometry, Polygon):
             raise L10Error(f"{candidate.site_id}: geometry must be a Polygon")
         if candidate.geometry.is_empty or not candidate.geometry.is_valid:
