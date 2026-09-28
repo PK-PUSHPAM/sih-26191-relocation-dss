@@ -43,6 +43,8 @@ services:
       - ./data:/app/data
       - ./ml:/app/ml
       - ./scripts:/app/scripts
+      - ./.github:/app/.github:ro
+      - ./tests:/app/tests:ro
 
   # Frontend Service: React + MapLibre / Leaflet UI
   frontend:
