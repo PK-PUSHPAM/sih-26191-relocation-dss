@@ -83,3 +83,27 @@ def test_no_config_change_is_noop():
     result = plan_for_config_change([])
     assert result.invalidated_layers == ()
     assert result.metadata["database_write"] is False
+
+def test_non_dataset_update_is_rejected():
+    with pytest.raises(L14Error, match="DatasetUpdate"):
+        plan_recompute([{"dataset_id":"x"}])
+
+def test_malformed_dataset_update_fields_are_rejected():
+    with pytest.raises(L14Error, match="dataset_id"):
+        plan_recompute([update("   ", "rainfall")])
+
+def test_invalid_previous_version_is_rejected():
+    with pytest.raises(L14Error, match="previous_version"):
+        plan_recompute([update("rain", "rainfall", previous="", new="v2")])
+
+def test_non_sequence_updates_are_rejected():
+    with pytest.raises(L14Error, match="sequence"):
+        plan_recompute("rainfall")
+
+def test_non_sequence_config_changes_are_rejected():
+    with pytest.raises(L14Error, match="sequence"):
+        plan_for_config_change("L11")
+
+def test_non_string_config_layer_is_rejected():
+    with pytest.raises(L14Error, match="non-empty strings"):
+        plan_for_config_change(["L11", None])
