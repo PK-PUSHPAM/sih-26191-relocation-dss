@@ -222,7 +222,11 @@ def validate_hydrological_observations(
     missing = required - set(observations.columns)
     if missing or not value_columns:
         raise FloodModelError("Hydrological data require station_id, timestamp, and discharge or water_level")
+    if observations.empty:
+        raise FloodModelError("Hydrological observations are empty")
     working = observations.copy()
+    if working["station_id"].isna().any() or working["station_id"].astype(str).str.strip().eq("").any():
+        raise FloodModelError("Hydrological station_id contains missing or empty values")
     parsed = pd.to_datetime(working["timestamp"], errors="coerce", utc=True)
     if parsed.isna().any():
         raise FloodModelError("Hydrological timestamps contain invalid values")
@@ -332,13 +336,17 @@ def run_flood_baseline(
 ) -> FloodBaselineResult:
     """Run L05 from real study boundary, river network, and optional extent files."""
     _require_canonical_grid(grid)
+    allowed_inputs = {"study_area", "river_network", "flood_extent"}
+    unknown_inputs = set(input_paths) - allowed_inputs
+    if unknown_inputs:
+        raise FloodModelError(f"Unknown L05 input names: {sorted(unknown_inputs)}")
     required = {"study_area", "river_network"}
     missing = sorted(name for name in required if name not in input_paths or not Path(input_paths[name]).is_file())
     if missing:
         raise FloodDataPendingError(f"Required L05 real inputs are absent: {missing}")
     if max_distance_m is None:
         raise FloodModelError("L05 river proximity requires explicit max_distance_m")
-    configured = dict(weights or get_weights_config()["flood_baseline"])
+    configured = validate_flood_weights(dict(weights or get_weights_config()["flood_baseline"]))
     boundary = load_and_prepare_study_area(_read_vector_file(Path(input_paths["study_area"])))
     left, bottom, right, top = array_bounds(grid.height, grid.width, grid.transform)
     if not boundary.geometry.union_all().intersects(box(left, bottom, right, top)):
