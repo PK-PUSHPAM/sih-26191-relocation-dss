@@ -80,6 +80,8 @@ def habitations(
 
 @router.get("/habitations/{habitation_id}")
 def habitation_detail(habitation_id: str, session: Session = Depends(_db_session)):
+    if not habitation_id.strip():
+        raise HTTPException(status_code=404, detail="habitation not found")
     row = session.execute(text("""
         SELECT h.habitation_id, h.admin_unit_id, h.name, h.population,
                h.households, h.population_year,
