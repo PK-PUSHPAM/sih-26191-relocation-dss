@@ -69,19 +69,35 @@ def calculate_slope_and_aspect_arrays(
         & valid[2:, 2:]
     )
 
-    dz_dx = ((c + 2.0 * f + i) - (a + 2.0 * d + g)) / (8.0 * dx)
-    dz_dy = ((g + 2.0 * h + i) - (a + 2.0 * b + c)) / (8.0 * dy)
+    # Sentinel/invalid elevations must never enter the Horn arithmetic.
+    # Compute derivatives only for windows whose complete 3x3 neighborhood is valid.
+    dz_dx = np.zeros_like(a, dtype=np.float64)
+    dz_dy = np.zeros_like(a, dtype=np.float64)
 
-    gradient = np.sqrt(dz_dx**2 + dz_dy**2)
-    slope_sub = np.degrees(np.arctan(gradient))
+    if np.any(all_valid):
+        dz_dx[all_valid] = (
+            (c[all_valid] + 2.0 * f[all_valid] + i[all_valid])
+            - (a[all_valid] + 2.0 * d[all_valid] + g[all_valid])
+        ) / (8.0 * dx)
+        dz_dy[all_valid] = (
+            (g[all_valid] + 2.0 * h[all_valid] + i[all_valid])
+            - (a[all_valid] + 2.0 * b[all_valid] + c[all_valid])
+        ) / (8.0 * dy)
 
-    # Downslope vector = (-dz/dx East, -dz/dy North).
-    # Azimuth clockwise from North = atan2(East, North).
-    aspect_sub = np.degrees(np.arctan2(-dz_dx, -dz_dy)) % 360.0
-    aspect_sub = np.where(slope_sub == 0.0, -1.0, aspect_sub)
+        gradient = np.sqrt(dz_dx[all_valid] ** 2 + dz_dy[all_valid] ** 2)
+        slope_values = np.degrees(np.arctan(gradient))
 
-    slope[1:-1, 1:-1][all_valid] = slope_sub[all_valid]
-    aspect[1:-1, 1:-1][all_valid] = aspect_sub[all_valid]
+        # Downslope vector = (-dz/dx East, -dz/dy North).
+        # Azimuth clockwise from North = atan2(East, North).
+        aspect_values = np.degrees(
+            np.arctan2(-dz_dx[all_valid], -dz_dy[all_valid])
+        ) % 360.0
+        aspect_values = np.where(slope_values == 0.0, -1.0, aspect_values)
+
+        slope_inner = slope[1:-1, 1:-1]
+        aspect_inner = aspect[1:-1, 1:-1]
+        slope_inner[all_valid] = slope_values.astype(np.float32)
+        aspect_inner[all_valid] = aspect_values.astype(np.float32)
 
     return slope, aspect
 
