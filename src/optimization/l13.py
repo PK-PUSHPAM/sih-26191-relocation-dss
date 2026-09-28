@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import math
+from numbers import Real
 from typing import Any, Mapping, Sequence
 
 
@@ -74,7 +75,7 @@ def _valid_nonnegative_int(value: Any) -> bool:
 
 def _valid_nonnegative_number(value: Any) -> bool:
     return (
-        isinstance(value, (int, float))
+        isinstance(value, Real)
         and not isinstance(value, bool)
         and math.isfinite(float(value))
         and float(value) >= 0.0
@@ -107,6 +108,12 @@ def _validate_inputs(
     unmet_penalty: float,
     hazard_weight: float,
 ) -> None:
+    if not isinstance(habitations, Sequence) or isinstance(habitations, (str, bytes)):
+        raise L13Error("habitations must be a sequence of HabitationDemand")
+    if not isinstance(sites, Sequence) or isinstance(sites, (str, bytes)):
+        raise L13Error("sites must be a sequence of CandidateSite")
+    if not isinstance(distances, Mapping):
+        raise L13Error("distances must be a mapping")
     if not _valid_nonnegative_number(distance_weight) or distance_weight <= 0:
         raise L13Error("distance_weight must be > 0")
     if not _valid_nonnegative_number(unmet_penalty) or unmet_penalty <= 0:
@@ -114,6 +121,10 @@ def _validate_inputs(
     if not _valid_nonnegative_number(hazard_weight) or hazard_weight < 0:
         raise L13Error("hazard_weight must be >= 0")
 
+    if any(not isinstance(h, HabitationDemand) for h in habitations):
+        raise L13Error("habitations entries must be HabitationDemand")
+    if any(not isinstance(s, CandidateSite) for s in sites):
+        raise L13Error("sites entries must be CandidateSite")
     h_ids = [h.habitation_id for h in habitations]
     s_ids = [s.site_id for s in sites]
     if len(h_ids) != len(set(h_ids)):
@@ -122,15 +133,15 @@ def _validate_inputs(
         raise L13Error("duplicate site_id")
 
     for h in habitations:
-        if not h.habitation_id:
-            raise L13Error("habitation_id is required")
+        if not isinstance(h.habitation_id, str) or not h.habitation_id.strip():
+            raise L13Error("habitation_id must be a non-empty string")
         if not _valid_nonnegative_int(h.exposed_population):
             raise L13Error("exposed_population must be a non-negative integer")
 
     h_id_set = set(h_ids)
     for s in sites:
-        if not s.site_id:
-            raise L13Error("site_id is required")
+        if not isinstance(s.site_id, str) or not s.site_id.strip():
+            raise L13Error("site_id must be a non-empty string")
         if not _valid_nonnegative_int(s.effective_capacity):
             raise L13Error("effective_capacity must be a non-negative integer")
         if not _valid_hazard(s.hazard):
@@ -181,6 +192,9 @@ def run_l13(
         habitations, sites, distances,
         distance_weight, unmet_penalty, hazard_weight,
     )
+    if source_metadata is not None and not isinstance(source_metadata, Mapping):
+        raise L13Error("source_metadata must be a mapping")
+
     if (
         isinstance(time_limit_seconds, bool)
         or not isinstance(time_limit_seconds, (int, float))
