@@ -7,7 +7,7 @@
 ## 1. Current Status Summary
 
 - **Current Layer**: `L17` (Testing, Deployment & Final Audit)
-- **Current Status**: **FINAL VERIFICATION PASSED — L01-L17 IMPLEMENTATION VERIFIED**
+- **Current Status**: **L01-L17 VERIFIED; SIH PRODUCTIZATION + ASSISTIVE ML IMPLEMENTED**
 - **Last Verified Backend Commit**: `894b00d` — L15 optimize test module monkeypatch fix
 - **Latest Backend Verification**: **398 passed, 11 warnings**
 - **Latest L15 Focused Verification**: **8 passed, 1 warning**
@@ -17,7 +17,7 @@
 - **Docker Runtime Smoke Test**: **PASSED**
 - **API Smoke Checks**: **6/6 endpoints returned HTTP 200**
 - **Container Health**: PostgreSQL healthy, backend healthy, frontend running
-- **Active Data Limitation**: Authoritative L04-L06 hazard inputs are absent from local data directories
+- **Active Data Limitation**: Authoritative L04-L06 hazard inputs and labelled landslide inventory are absent from local data directories
 
 ---
 
@@ -56,7 +56,17 @@
 - L16 does not introduce new scoring formulas, thresholds, datasets, or ML.
 - Frontend production build verified successfully.
 
-## 4. L17 Final Verification Evidence
+## 4. SIH Productization & Assistive ML
+
+- Reworked L16 into an SIH-facing command center with a persistent decision-workspace sidebar, operational header, KPI cards, live GIS workspace, priority queue, relocation-site explorer, capacity bottleneck visualization, allocation register, methodology pipeline, and report workspace.
+- Added a dedicated **AI / ML Insights** screen.
+- Added an assistive landslide-susceptibility ML framework using Random Forest and Logistic Regression baselines, strict feature/schema validation, spatial-group cross-validation, ROC-AUC/PR-AUC evaluation hooks, and artifact validation.
+- Added `GET /api/v1/ml/status` so the dashboard can show model readiness without fabricating predictions or accuracy.
+- Added ML contract tests.
+- ML remains **assistive only**; deterministic L07/L08 rules remain authoritative.
+- Because an authoritative labelled landslide inventory is not present, the ML layer deliberately reports `NOT_TRAINED` rather than inventing predictions or metrics.
+
+## 5. L17 Final Verification Evidence
 
 - Backend L15 focused tests: **8 passed, 1 warning**.
 - Complete backend test suite: **398 passed, 11 warnings**.
@@ -78,20 +88,20 @@
 
 Warnings observed are dependency/tooling deprecations and the frontend bundle-size advisory; they did not fail verification.
 
-## 5. Existing Real-Data Limitations
+## 6. Existing Real-Data Limitations
 
 - Authoritative L04-L06 hazard inputs are absent from local data directories.
 - No real combined-risk raster, red-zone raster, or real Chamoli vulnerability values are generated.
 - L03-L16 verification relies on framework contracts and synthetic/unit fixtures where authoritative inputs are unavailable.
 - Current outputs are decision-support artifacts, not legal orders or engineering-certified capacities.
 
-## 6. Active Blockers & Decisions Log
+## 7. Active Blockers & Decisions Log
 
 - **Active Data Limitation**: authoritative L04-L06 hazard inputs are absent from local data directories; therefore a real production combined-risk/red-zone result cannot yet be generated.
 - **Architectural Decisions**: `OD-01` through `OD-12` strictly respected.
 - **Release Verification**: Docker Compose build/up smoke verification is complete and passed.
 
-## 7. L17 Implementation Summary
+## 8. L17 Implementation Summary
 
 - Added committed Python runtime dependencies in `requirements.txt`.
 - Corrected backend Docker entrypoint to the actual `src.api.app:app` FastAPI module.
