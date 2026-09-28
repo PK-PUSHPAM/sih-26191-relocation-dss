@@ -63,6 +63,7 @@ def calculate_slope_and_aspect_arrays(
         & valid[0:-2, 1:-1]
         & valid[0:-2, 2:]
         & valid[1:-1, 0:-2]
+        & valid[1:-1, 1:-1]
         & valid[1:-1, 2:]
         & valid[2:, 0:-2]
         & valid[2:, 1:-1]
@@ -79,7 +80,9 @@ def calculate_slope_and_aspect_arrays(
             (c[all_valid] + 2.0 * f[all_valid] + i[all_valid])
             - (a[all_valid] + 2.0 * d[all_valid] + g[all_valid])
         ) / (8.0 * dx)
-        dz_dy[all_valid] = (
+        # Raster rows increase southward, while +y in the aspect convention
+        # is North. Negate the row-direction derivative to obtain dz/dy_North.
+        dz_dy[all_valid] = -(
             (g[all_valid] + 2.0 * h[all_valid] + i[all_valid])
             - (a[all_valid] + 2.0 * b[all_valid] + c[all_valid])
         ) / (8.0 * dy)
