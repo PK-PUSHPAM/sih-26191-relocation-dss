@@ -206,3 +206,40 @@ def test_deterministic_with_fixed_timestamp():
 def test_empty_input():
     result = run_l10([])
     assert result.records == ()
+
+
+def test_duplicate_site_ids_are_rejected():
+    with pytest.raises(L10Error):
+        run_l10([make_candidate("S1"), make_candidate("S1")])
+
+
+@pytest.mark.parametrize("bad_weights", [
+    {"hazard_safety": "0.30", **{k: v for k, v in SUITABILITY_WEIGHTS.items() if k != "hazard_safety"}},
+    {**SUITABILITY_WEIGHTS, "extra": 0.0},
+    {**SUITABILITY_WEIGHTS, "hazard_safety": np.nan},
+    {**SUITABILITY_WEIGHTS, "hazard_safety": True},
+])
+def test_malformed_weights_are_rejected(bad_weights):
+    with pytest.raises(L10Error):
+        run_l10([make_candidate()], weights=bad_weights)
+
+
+def test_non_mapping_weights_are_rejected():
+    with pytest.raises(L10Error):
+        run_l10([make_candidate()], weights=["bad"])
+
+
+def test_source_metadata_must_be_mapping():
+    with pytest.raises(L10Error):
+        run_l10([make_candidate()], source_metadata=["bad"])
+
+
+def test_timestamp_type_must_be_datetime():
+    with pytest.raises(L10Error):
+        run_l10([make_candidate()], execution_timestamp="2026-01-01T00:00:00Z")
+
+
+def test_area_exactly_one_hectare_is_allowed():
+    result = run_l10([make_candidate(geometry=square(100.0))])
+    assert result.records[0].status is SiteStatus.ELIGIBLE
+    assert result.records[0].area_m2 == 10000.0
