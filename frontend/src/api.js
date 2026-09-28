@@ -18,6 +18,7 @@ export const api = {
   habitations: (params = "") => request("/api/v1/habitations" + params),
   habitation: (id) => request(`/api/v1/habitations/${encodeURIComponent(id)}`),
   hazards: () => request("/api/v1/hazards"),
+  mlStatus: () => request("/api/v1/ml/status"),
   riskMap: () => request("/api/v1/risk/map"),
   sites: () => request("/api/v1/sites"),
   siteCapacity: (id) => request(`/api/v1/sites/${encodeURIComponent(id)}/capacity`),
