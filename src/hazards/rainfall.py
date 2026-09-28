@@ -129,7 +129,7 @@ class RainfallObservation:
     def __post_init__(self) -> None:
         if self.cell_id is None and not self.station_id:
             raise RainfallValidationError("Rainfall observation requires cell_id or station_id")
-        if self.cell_id is not None and (not isinstance(self.cell_id, int) or self.cell_id < 0):
+        if self.cell_id is not None and (isinstance(self.cell_id, bool) or not isinstance(self.cell_id, int) or self.cell_id < 0):
             raise RainfallValidationError("Rainfall cell_id must be a non-negative integer")
         if self.observed_at is not None and self.observed_at.tzinfo is None:
             raise RainfallValidationError("Rainfall timestamp must be timezone-aware")
@@ -276,6 +276,43 @@ class LocalCsvRainfallProvider:
         self.source_id = source_id
 
     def fetch(self, window_start: Optional[datetime] = None, window_end: Optional[datetime] = None) -> RainfallProviderResult:
+        if (window_start is None) != (window_end is None):
+            return RainfallProviderResult(
+                (),
+                RainfallProvenance(
+                    source_id=self.source_id,
+                    provider_name="LocalCsvRainfallProvider",
+                    source_kind="local_or_test_input",
+                    source_path=self.csv_path.as_posix(),
+                    checksum_sha256=compute_sha256(self.csv_path) if self.csv_path.is_file() else None,
+                    operational=False,
+                    real_time=False,
+                    metadata={"real_time": False, "operational": False},
+                ),
+                RainfallEvaluationState.INCOMPLETE_WINDOW,
+                "Both window bounds are required",
+            )
+        if window_start is not None and (
+            window_start.tzinfo is None
+            or window_end is None
+            or window_end.tzinfo is None
+            or window_start > window_end
+        ):
+            return RainfallProviderResult(
+                (),
+                RainfallProvenance(
+                    source_id=self.source_id,
+                    provider_name="LocalCsvRainfallProvider",
+                    source_kind="local_or_test_input",
+                    source_path=self.csv_path.as_posix(),
+                    checksum_sha256=compute_sha256(self.csv_path) if self.csv_path.is_file() else None,
+                    operational=False,
+                    real_time=False,
+                    metadata={"real_time": False, "operational": False},
+                ),
+                RainfallEvaluationState.INVALID_DATA,
+                "Rainfall provider window bounds are invalid",
+            )
         provenance = RainfallProvenance(
             source_id=self.source_id,
             provider_name="LocalCsvRainfallProvider",
@@ -353,6 +390,18 @@ def evaluate_rainfall_window(
     provenance: Optional[RainfallProvenance] = None,
 ) -> RainfallTriggerResult:
     """Evaluate a rainfall-total threshold without imputing missing observations."""
+    if expected_observation_count is not None and (
+        isinstance(expected_observation_count, bool)
+        or not isinstance(expected_observation_count, (int, np.integer))
+        or expected_observation_count < 0
+    ):
+        return RainfallTriggerResult(
+            spatial_id, None, window_end, window_start, window_end,
+            RainfallEvaluationState.INVALID_CONFIGURATION, "not_evaluable",
+            "expected_observation_count must be a non-negative integer",
+            rule,
+            _enrich_provenance(provenance, observations, spatial_id, window_start, window_end, window_end, None, rule),
+        )
     evaluation_timestamp = window_end or (max((observation.observed_at for observation in observations if observation.observed_at), default=None))
     if any(observation.observed_at is None for observation in observations):
         return RainfallTriggerResult(spatial_id, None, evaluation_timestamp, window_start, window_end, RainfallEvaluationState.MISSING_TIMESTAMP, "not_evaluable", "At least one rainfall observation is missing its timestamp", rule, _enrich_provenance(provenance, observations, spatial_id, window_start, window_end, evaluation_timestamp, None, rule))
@@ -542,6 +591,8 @@ def _parse_optional_timestamp(value: Any, field_name: str) -> Optional[datetime]
 def _optional_int(value: Any) -> Optional[int]:
     if value is None or (isinstance(value, float) and np.isnan(value)) or (isinstance(value, str) and not value.strip()):
         return None
+    if isinstance(value, bool):
+        raise RainfallValidationError("cell_id must be an integer")
     try:
         parsed = int(value)
     except (TypeError, ValueError) as exc:
