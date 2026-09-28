@@ -7,34 +7,41 @@
 ## 1. Current Status Summary
 
 - **Current Layer**: `L17` (Testing, Deployment & Final Audit)
-- **Current Status**: `IMPLEMENTED — LOCAL TEST/BUILD VERIFIED; DOCKER SMOKE TEST PENDING`
-- **Next Task**: Docker Compose build/up smoke verification, then final release audit
-- **Last Verified Backend Commit**: L15 local full-suite verification — **306 passed, 2 skipped**
-- **Active Blockers**: Authoritative L04-L06 hazard inputs are absent from local data directories
+- **Current Status**: **FINAL VERIFICATION PASSED — L01-L17 IMPLEMENTATION VERIFIED**
+- **Last Verified Backend Commit**: `894b00d` — L15 optimize test module monkeypatch fix
+- **Latest Backend Verification**: **398 passed, 11 warnings**
+- **Latest L15 Focused Verification**: **8 passed, 1 warning**
+- **Frontend Production Build**: **PASSED**
+- **Docker Compose Config**: **PASSED**
+- **Docker Backend + Frontend Image Build**: **PASSED**
+- **Docker Runtime Smoke Test**: **PASSED**
+- **API Smoke Checks**: **6/6 endpoints returned HTTP 200**
+- **Container Health**: PostgreSQL healthy, backend healthy, frontend running
+- **Active Data Limitation**: Authoritative L04-L06 hazard inputs are absent from local data directories
 
 ---
 
 ## 2. Layer Implementation Progress
 
-| Layer ID | Name | Status | Tests | Verified Commit |
+| Layer ID | Name | Status | Tests / Verification | Verified Commit |
 | :--- | :--- | :--- | :--- | :--- |
-| **L01** | Data Ingestion & Validation | **FOUNDATION VERIFIED** | 14/14 | `49a204a` |
-| **L02** | PostGIS Spatial Database | **OFFLINE / DDL VERIFIED** | 10/10; 2 live-skipped | `7ba343f` |
-| **L03** | GIS Processing & Common Grid | **FRAMEWORK VERIFIED** | 20/20 | In progress |
-| **L04** | Landslide Baseline | **FRAMEWORK VERIFIED** | 22/22 | In progress |
-| **L05** | Flood / Flash Flood Baseline | **FRAMEWORK VERIFIED** | 10/10 | In progress |
-| **L06** | Rainfall Trigger Index | **FRAMEWORK VERIFIED** | 18/18 | In progress |
-| **L07** | Multi-Hazard Risk Combination | **FRAMEWORK VERIFIED** | 29/29 | In progress |
-| **L08** | Red-Zone Engine | **FRAMEWORK VERIFIED** | 42/42 | `aacf149` |
-| **L09** | Exposure & Vulnerability Engine | **VERIFIED** | 25/25; full suite 190/190 | `3ff399e` |
-| **L10** | Relocation Site Suitability | **VERIFIED** | 37/37; full suite 227/227, 2 skipped | `cdae582` |
-| **L11** | Carrying Capacity Engine | **VERIFIED** | 17; full suite 251 passed, 2 skipped | `66aafd5` |
-| **L12** | Relocation Priority Engine | **VERIFIED** | 18; full suite 279 passed, 2 skipped | `5aaa695` |
-| **L13** | Allocation Optimization (CP-SAT) | **VERIFIED** | full suite 289 passed, 2 skipped | `0d1a7cd` |
-| **L14** | Update & Recompute Engine | **VERIFIED** | full suite 303 passed, 2 skipped | `2b5ab535` |
-| **L15** | FastAPI Integration Layer | **VERIFIED** | full suite **306 passed, 2 skipped, 1 warning** | local verification |
-| **L16** | Dashboard & Decision Reports | **VERIFIED** | 310 passed, 2 skipped; frontend production build passed | verified locally |
-| **L17** | Testing, Docker & Final Audit | **IMPLEMENTED — LOCAL CODE CONTRACTS VERIFIED** | L17 deployment-contract tests added; Docker smoke pending | current |
+| **L01** | Data Ingestion & Validation | **FOUNDATION VERIFIED** | verified | `49a204a` |
+| **L02** | PostGIS Spatial Database | **OFFLINE / DDL VERIFIED** | verified; live-data limitations documented | `7ba343f` |
+| **L03** | GIS Processing & Common Grid | **FRAMEWORK VERIFIED** | full-suite verified | hardened |
+| **L04** | Landslide Baseline | **FRAMEWORK VERIFIED** | full-suite verified | hardened |
+| **L05** | Flood / Flash Flood Baseline | **FRAMEWORK VERIFIED** | full-suite verified | hardened |
+| **L06** | Rainfall Trigger Index | **FRAMEWORK VERIFIED** | full-suite verified | hardened |
+| **L07** | Multi-Hazard Risk Combination | **FRAMEWORK VERIFIED** | full-suite verified | hardened |
+| **L08** | Red-Zone Engine | **VERIFIED** | focused + full-suite verified | hardened |
+| **L09** | Exposure & Vulnerability Engine | **VERIFIED** | focused + full-suite verified | `920de72` |
+| **L10** | Relocation Site Suitability | **VERIFIED** | focused + full-suite verified | `eded8a2` |
+| **L11** | Carrying Capacity Engine | **VERIFIED** | 28 focused; full suite 380 passed | `f5c118c` |
+| **L12** | Relocation Priority Engine | **VERIFIED** | 33 focused; full suite 385 passed | `5da9ba9` |
+| **L13** | Allocation Optimization (CP-SAT) | **VERIFIED** | 17 focused; full suite 389 passed | `58bb215` |
+| **L14** | Update & Recompute Engine | **VERIFIED** | 17 focused; full suite 395 passed | `c35be0f` |
+| **L15** | FastAPI Integration Layer | **VERIFIED** | 8 focused; full suite 398 passed | `894b00d` |
+| **L16** | Dashboard & Decision Reports | **VERIFIED** | frontend production build passed | current main |
+| **L17** | Testing, Docker & Final Audit | **FINAL VERIFICATION PASSED** | Docker Compose config/build/up, health and API smoke checks passed | current main |
 
 ---
 
@@ -47,22 +54,44 @@
 - Report export supports backend JSON retrieval, Markdown download, and browser Print / Save as PDF.
 - Backend/API errors are surfaced instead of converted to fabricated values.
 - L16 does not introduce new scoring formulas, thresholds, datasets, or ML.
-- L16 frontend production verification requires `npm install` and `npm run build`.
+- Frontend production build verified successfully.
 
-## 4. Existing Real-Data Limitations
+## 4. L17 Final Verification Evidence
+
+- Backend L15 focused tests: **8 passed, 1 warning**.
+- Complete backend test suite: **398 passed, 11 warnings**.
+- Frontend production build: **Vite build passed**.
+- Docker Compose configuration validation: **passed**.
+- Backend and frontend Docker images: **built successfully**.
+- PostgreSQL container: **healthy**.
+- Backend container: **healthy**.
+- Frontend container: **running**.
+- Backend health endpoint: **HTTP 200**, response status `ok`, API version `1.0`.
+- Frontend root: **HTTP 200**.
+- API smoke endpoints all returned **HTTP 200**:
+  - `/api/v1/admin-units`
+  - `/api/v1/habitations`
+  - `/api/v1/hazards`
+  - `/api/v1/risk/map`
+  - `/api/v1/sites`
+  - `/api/v1/priorities`
+
+Warnings observed are dependency/tooling deprecations and the frontend bundle-size advisory; they did not fail verification.
+
+## 5. Existing Real-Data Limitations
 
 - Authoritative L04-L06 hazard inputs are absent from local data directories.
 - No real combined-risk raster, red-zone raster, or real Chamoli vulnerability values are generated.
 - L03-L16 verification relies on framework contracts and synthetic/unit fixtures where authoritative inputs are unavailable.
 - Current outputs are decision-support artifacts, not legal orders or engineering-certified capacities.
 
-## 5. Active Blockers & Decisions Log
+## 6. Active Blockers & Decisions Log
 
-- **Active Blockers**: Authoritative L04-L06 hazard inputs are absent from local data directories; no real combined-risk output can be generated.
+- **Active Data Limitation**: authoritative L04-L06 hazard inputs are absent from local data directories; therefore a real production combined-risk/red-zone result cannot yet be generated.
 - **Architectural Decisions**: `OD-01` through `OD-12` strictly respected.
+- **Release Verification**: Docker Compose build/up smoke verification is complete and passed.
 
-
-## 6. L17 Implementation Summary
+## 7. L17 Implementation Summary
 
 - Added committed Python runtime dependencies in `requirements.txt`.
 - Corrected backend Docker entrypoint to the actual `src.api.app:app` FastAPI module.
@@ -72,5 +101,4 @@
 - Added GitHub Actions CI for backend tests, frontend production build, and Docker Compose configuration validation.
 - Added L17 deployment-contract tests.
 - Added the L17 testing/deployment/final-audit specification.
-- Local evidence already available: `310 passed, 2 skipped, 1 warning` and successful `npm run build`.
-- Remaining release verification: run Docker Compose configuration/build/up smoke tests on the user's machine.
+- Completed final local release verification: **398 backend tests passed**, frontend production build passed, Docker images built, full stack started, health checks passed, and all six API smoke endpoints returned HTTP 200.
