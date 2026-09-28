@@ -119,6 +119,16 @@ def _validate_hard_exclusion_metadata(metadata: Mapping[str, Any]) -> None:
         raise ValueError(
             f"hard_exclusion_metadata missing required provenance fields: {missing}"
         )
+    for key in ("source", "checksum", "timestamp"):
+        value = metadata.get(key)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"hard_exclusion_metadata field '{key}' must be a non-empty string")
+    try:
+        parsed_timestamp = datetime.fromisoformat(str(metadata["timestamp"]).replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("hard_exclusion_metadata timestamp must be valid ISO-8601") from exc
+    if parsed_timestamp.tzinfo is None:
+        raise ValueError("hard_exclusion_metadata timestamp must be timezone-aware")
 
 
 def _validate_raster(name: str, array: np.ndarray, grid: CanonicalGridDefinition) -> None:
@@ -190,6 +200,8 @@ def run_l08(
         raise ValueError("hard_exclusion raster is required")
 
     _validate_hard_exclusion_metadata(hard_exclusion_metadata)
+    if l07_metadata is not None and not isinstance(l07_metadata, Mapping):
+        raise ValueError("l07_metadata must be a mapping when supplied")
 
     _validate_grid(grid)
     _validate_raster("combined_risk", combined_risk, grid)
