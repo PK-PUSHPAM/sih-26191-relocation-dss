@@ -42,7 +42,7 @@ function fmt(value, digits = 2) {
   if (typeof value === "number") return Number.isInteger(value) ? value.toLocaleString("en-IN") : value.toFixed(digits);
   return value;
 }
-function tierClass(tier = "") { return tier.toLowerCase().replaceAll(" ", "-"); }
+function tierClass(tier = "") { return String(tier ?? "").toLowerCase().replaceAll(" ", "-"); }
 
 function Shell({ screen, setScreen, children }) {
   const [mobile, setMobile] = useState(false);
