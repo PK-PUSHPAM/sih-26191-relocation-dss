@@ -340,13 +340,13 @@ def run_flood_baseline(
     unknown_inputs = set(input_paths) - allowed_inputs
     if unknown_inputs:
         raise FloodModelError(f"Unknown L05 input names: {sorted(unknown_inputs)}")
+    configured = validate_flood_weights(dict(weights or get_weights_config()["flood_baseline"]))
     required = {"study_area", "river_network"}
     missing = sorted(name for name in required if name not in input_paths or not Path(input_paths[name]).is_file())
     if missing:
         raise FloodDataPendingError(f"Required L05 real inputs are absent: {missing}")
     if max_distance_m is None:
         raise FloodModelError("L05 river proximity requires explicit max_distance_m")
-    configured = validate_flood_weights(dict(weights or get_weights_config()["flood_baseline"]))
     boundary = load_and_prepare_study_area(_read_vector_file(Path(input_paths["study_area"])))
     left, bottom, right, top = array_bounds(grid.height, grid.width, grid.transform)
     if not boundary.geometry.union_all().intersects(box(left, bottom, right, top)):
