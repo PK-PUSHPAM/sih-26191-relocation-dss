@@ -251,3 +251,47 @@ def test_timestamp_gap_detection_is_explicitly_not_supported():
         expected_observation_count=2,
     )
     assert result.state == RainfallEvaluationState.TRIGGERED
+
+def test_rainfall_rejects_boolean_cell_id_and_invalid_expected_count():
+    with pytest.raises(RainfallValidationError, match="cell_id"):
+        RainfallObservation(1.0, datetime(2026, 1, 1, tzinfo=UTC), cell_id=True)
+
+    result = evaluate_rainfall_window(
+        [observation(1.0)],
+        0,
+        RainfallRule(1.0),
+        expected_observation_count=-1,
+    )
+    assert result.state == RainfallEvaluationState.INVALID_CONFIGURATION
+
+    boolean_count = evaluate_rainfall_window(
+        [observation(1.0)],
+        0,
+        RainfallRule(1.0),
+        expected_observation_count=True,
+    )
+    assert boolean_count.state == RainfallEvaluationState.INVALID_CONFIGURATION
+
+
+def test_local_provider_rejects_invalid_fetch_window(tmp_path):
+    csv_path = tmp_path / "rainfall.csv"
+    csv_path.write_text(
+        "cell_id,rainfall_mm,observed_at\n0,1,2026-01-01T00:00:00Z\n",
+        encoding="utf-8",
+    )
+    provider = LocalCsvRainfallProvider(csv_path)
+
+    incomplete = provider.fetch(window_start=datetime(2026, 1, 1, tzinfo=UTC))
+    assert incomplete.state == RainfallEvaluationState.INCOMPLETE_WINDOW
+
+    invalid = provider.fetch(
+        window_start=datetime(2026, 1, 2, tzinfo=UTC),
+        window_end=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    assert invalid.state == RainfallEvaluationState.INVALID_DATA
+
+    naive = provider.fetch(
+        window_start=datetime(2026, 1, 1),
+        window_end=datetime(2026, 1, 2),
+    )
+    assert naive.state == RainfallEvaluationState.INVALID_DATA
