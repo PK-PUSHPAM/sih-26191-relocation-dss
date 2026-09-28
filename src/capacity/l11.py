@@ -135,7 +135,7 @@ def _validate_parameters(
             raise L11Error(f"{name} must be numeric")
         if not np.isfinite(float(value)) or float(value) < 0:
             raise L11Error(f"{name} must be finite and non-negative")
-        if not np.isclose(float(value), expected[name], atol=1e-12):
+        if float(value) != expected[name]:
             raise L11Error(
                 f"{name} must match the frozen L11 configuration value {expected[name]}"
             )
@@ -216,8 +216,12 @@ def run_l11(
         healthcare_person_per_bed,
     )
     timestamp = execution_timestamp or datetime.now(timezone.utc)
+    if not isinstance(timestamp, datetime):
+        raise L11Error("L11 execution timestamp must be a datetime")
     if timestamp.tzinfo is None:
         raise L11Error("L11 execution timestamp must be timezone-aware")
+    if source_metadata is not None and not isinstance(source_metadata, Mapping):
+        raise L11Error("L11 source_metadata must be a mapping when supplied")
 
     records = []
     for idx, site in enumerate(tuple(sites)):
@@ -234,6 +238,28 @@ def run_l11(
             "access_capacity": site.access_capacity,
         }
         missing = [name for name, value in raw_values.items() if value is None]
+
+        try:
+            for name, value in raw_values.items():
+                if value is not None:
+                    _validate_nonnegative(name, value)
+        except L11Error as exc:
+            records.append(
+                CapacityRecord(
+                    site_id=site.site_id,
+                    land_cap=None,
+                    water_cap=None,
+                    sanitation_cap=None,
+                    health_cap=None,
+                    access_cap=None,
+                    binding_bottleneck=None,
+                    effective_cap=None,
+                    quality_flag=CapacityQuality.INVALID,
+                    explanation={"invalid_input": str(exc), "missing_fields": missing},
+                )
+            )
+            continue
+
         if missing:
             records.append(_record_non_evaluable(site.site_id, missing))
             continue
