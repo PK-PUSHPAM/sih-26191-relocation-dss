@@ -177,15 +177,107 @@ function MapWorkspace({ mode = "hazards" }) {
 
 function Habitations() {
   const state = useRequest(() => api.habitations("?limit=1000"), []);
-  if (state.loading) return <><Intro title="Vulnerable Habitations" text="Exposure, vulnerability and relocation priority in one place."/><Loading/></>;
-  if (state.error) return <><Intro title="Vulnerable Habitations" text="Population exposure and priority workspace."/><ErrorBox error={state.error}/></>;
-  const rows = rowsOf(state.data), immediate = rows.filter(x => ["Immediate","Short-term"].includes(propsOf(x).tier));
-  return <><Intro eyebrow="L09 + L12" title="Vulnerable Habitations" text="Move from a district-wide list to an explainable priority decision." action={<Badge>{rows.length} RECORDS</Badge>}/>
-    <div className="kpi-grid compact"><KPI icon="⌖" label="Records" value={fmt(rows.length)}/><KPI icon="!" label="Immediate + short" value={fmt(immediate.length)} tone="red"/><KPI icon="◌" label="Population coverage" value={fmt(rows.reduce((n,r)=>n+Number(propsOf(r).population||0),0))}/></div>
-    <Panel title="Priority register" eyebrow="BACKEND OUTPUT"><div className="table-shell"><table><thead><tr><th>HABITATION</th><th>POPULATION</th><th>VULNERABILITY</th><th>PRIORITY</th><th>TIER</th></tr></thead><tbody>{rows.slice(0,80).map((row,i)=>{const p=propsOf(row);return <tr key={p.habitation_id||i}><td><b>{p.name||"Unnamed habitation"}</b><small>{p.habitation_id||"—"}</small></td><td>{fmt(p.population)}</td><td>{fmt(p.vulnerability)}</td><td><strong>{fmt(p.priority_score)}</strong></td><td><span className={"tier "+tierClass(p.tier)}>{p.tier||"—"}</span></td></tr>})}</tbody></table>{!rows.length&&<Empty icon="⌖" title="No habitation outputs" text="Authoritative habitation data is present in the project; priority outputs may still await analytical inputs."/ >}</div></Panel>
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("ALL");
+  const [selected, setSelected] = useState(null);
+  const [detail, setDetail] = useState(null);
+
+  if (state.loading) return <><Intro eyebrow="L09 + L12" title="Vulnerable Habitations" text="Exposure, vulnerability and relocation priority in one explainable register."/><Loading text="Loading Chamoli habitation intelligence…"/></>;
+  if (state.error) return <><Intro eyebrow="L09 + L12" title="Vulnerable Habitations" text="Exposure, vulnerability and relocation priority in one explainable register."/><ErrorBox error={state.error}/></>;
+
+  const rows = rowsOf(state.data);
+  const normalizedQuery = query.trim().toLowerCase();
+  const filtered = rows.filter(row => {
+    const p = propsOf(row);
+    const tier = String(p.tier ?? "").toLowerCase();
+    const matchesFilter =
+      filter === "ALL" ||
+      (filter === "IMMEDIATE" && tier === "immediate") ||
+      (filter === "SHORT" && tier === "short-term") ||
+      (filter === "MEDIUM" && tier === "medium-term") ||
+      (filter === "MONITOR" && tier === "monitor");
+    const haystack = [p.name, p.habitation_id, p.admin_unit_id].filter(Boolean).join(" ").toLowerCase();
+    return matchesFilter && (!normalizedQuery || haystack.includes(normalizedQuery));
+  });
+
+  const immediate = rows.filter(x => ["Immediate","Short-term"].includes(propsOf(x).tier)).length;
+  const population = rows.reduce((n,r)=>n+Number(propsOf(r).population||0),0);
+  const evaluated = rows.filter(x => propsOf(x).priority_score != null).length;
+  const open = (row) => {
+    const p = propsOf(row);
+    setSelected(p);
+    setDetail(null);
+    if (p.habitation_id) api.habitation(p.habitation_id).then(setDetail).catch(() => setDetail({ error: true }));
+  };
+
+  return <>
+    <Intro eyebrow="L09 + L12 · VULNERABILITY & PRIORITY" title="Vulnerable Habitations"
+      text="Search every registered habitation, isolate priority tiers, and inspect the evidence behind a relocation decision."
+      action={<Badge tone="green">{rows.length} REGISTERED</Badge>}/>
+    <div className="kpi-grid compact">
+      <KPI icon="⌖" label="Registered" value={fmt(rows.length)} sub="Chamoli habitation records"/>
+      <KPI icon="△" label="Immediate + short" value={fmt(immediate)} sub="L12 priority tiers" tone="red"/>
+      <KPI icon="◌" label="Population" value={fmt(population)} sub="census coverage"/>
+      <KPI icon="✓" label="Evaluated" value={fmt(evaluated)} sub="with priority output" tone="green"/>
+    </div>
+    <div className="habitation-workspace">
+      <section className="panel habitation-register">
+        <div className="panel-head">
+          <div><span>HABITATION REGISTER</span><h2>Find a vulnerable habitation</h2></div>
+          <Badge>{filtered.length} MATCHES</Badge>
+        </div>
+        <div className="habitation-controls">
+          <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search village name, habitation ID, or admin unit…" aria-label="Search habitations"/>
+          <select value={filter} onChange={e=>setFilter(e.target.value)} aria-label="Filter habitation priority">
+            <option value="ALL">All tiers</option>
+            <option value="IMMEDIATE">Immediate</option>
+            <option value="SHORT">Short-term</option>
+            <option value="MEDIUM">Medium-term</option>
+            <option value="MONITOR">Monitor</option>
+          </select>
+        </div>
+        <div className="habitation-list">
+          {filtered.slice(0,100).map((row,i)=>{
+            const p=propsOf(row);
+            const active=selected?.habitation_id===p.habitation_id;
+            return <button key={p.habitation_id||i} className={"habitation-row "+(active?"selected":"")} onClick={()=>open(row)}>
+              <div className="habitation-marker">{String(i+1).padStart(2,"0")}</div>
+              <div className="habitation-name"><b>{p.name||"Unnamed habitation"}</b><small>{p.habitation_id||"ID unavailable"} · {p.admin_unit_id||"Admin unit unavailable"}</small></div>
+              <div><span className="metric-label">POPULATION</span><strong>{fmt(p.population)}</strong></div>
+              <div><span className="metric-label">VULNERABILITY</span><strong>{fmt(p.vulnerability)}</strong></div>
+              <div><span className={"tier "+tierClass(p.tier)}>{p.tier||"Not evaluated"}</span></div>
+              <span className="row-arrow">→</span>
+            </button>;
+          })}
+          {!filtered.length && <Empty icon="⌖" title="No matching habitations" text="Try another search term or priority filter."/>}
+          {filtered.length>100 && <div className="list-note">Showing first 100 matches. Use search/filter to narrow the register.</div>}
+        </div>
+      </section>
+      <aside className="habitation-detail">
+        {!selected ? <div className="detail-empty"><div className="detail-orb">⌖</div><h3>Select a habitation</h3><p>Choose a village from the register to inspect population, vulnerability and priority evidence.</p></div> :
+          <div className="detail-card">
+            <div className="detail-top"><span>HABITATION PROFILE</span><Badge tone={selected.tier==="Immediate"?"red":""}>{selected.tier||"NOT EVALUATED"}</Badge></div>
+            <div className="detail-orb">{String(selected.name||"CH").slice(0,2).toUpperCase()}</div>
+            <h2>{selected.name||"Unnamed habitation"}</h2><small className="detail-id">{selected.habitation_id||"—"}</small>
+            <div className="detail-kpis">
+              <div><span>POPULATION</span><b>{fmt(selected.population)}</b></div>
+              <div><span>VULNERABILITY</span><b>{fmt(selected.vulnerability)}</b></div>
+              <div><span>PRIORITY</span><b>{fmt(selected.priority_score)}</b></div>
+              <div><span>YEAR</span><b>{fmt(selected.population_year)}</b></div>
+            </div>
+            <div className="evidence-title">DECISION EVIDENCE</div>
+            {detail?.error ? <div className="ml-note">Detailed analytical output is unavailable for this habitation.</div> :
+              detail ? <div className="evidence-grid">
+                {[["Population exposure",detail.population_exposure],["Social score",detail.social_score],["Access score",detail.access_score],["Infrastructure",detail.infra_score],["Recurrence",detail.recurrence_score],["Response difficulty",detail.response_difficulty]].map(([label,value])=><div key={label}><span>{label}</span><b>{fmt(value)}</b></div>)}
+              </div> :
+              <Loading text="Loading habitation evidence…"/>
+            }
+            <div className="detail-note">Backend-authoritative record · no score is recalculated in the browser.</div>
+          </div>}
+      </aside>
+    </div>
   </>;
 }
-
 function Sites() {
   const state=useRequest(()=>api.sites(),[]);
   if(state.loading)return <><Intro title="Relocation Sites" text="Find safer candidate sites and understand their suitability."/><Loading/></>;
@@ -247,6 +339,18 @@ function Reports() {
     {state?.data&&<><div className="report-actions"><button onClick={()=>downloadMarkdown(state.data)}>Download Markdown</button><button onClick={()=>printReport(state.data)}>Print / Save PDF</button></div><details className="audit" open><summary>Report payload</summary><pre>{JSON.stringify(state.data,null,2)}</pre></details></>}</Panel></>;
 }
 
+class AppErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error) { console.error("Dashboard component error:", error); }
+  render() {
+    if (this.state.hasError) {
+      return <div className="fatal-error"><div><span className="eyebrow">RECOVERY VIEW</span><h1>Dashboard component error</h1><p>The interface hit a rendering error. Backend services remain separate and authoritative.</p><code>{this.state.error?.message || "Unknown rendering error"}</code><button className="primary" onClick={()=>window.location.reload()}>Reload dashboard →</button></div></div>;
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const [screen,setScreen]=useState("overview"); const [result,setResult]=useState(null);
   const go=id=>setScreen(id);
@@ -262,5 +366,5 @@ export default function App() {
   else if(screen==="allocations")page=<Allocations result={result}/>;
   else if(screen==="methodology")page=<Methodology/>;
   else page=<Reports/>;
-  return <Shell screen={screen} setScreen={setScreen}>{page}</Shell>;
+  return <AppErrorBoundary><Shell screen={screen} setScreen={setScreen}>{page}</Shell></AppErrorBoundary>;
 }
