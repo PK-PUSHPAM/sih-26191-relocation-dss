@@ -259,3 +259,46 @@ def test_output_bounds_and_spatial_metadata():
     assert result.metadata["crs"] == CANONICAL_PROJECTED_CRS_STR
     assert result.metadata["resolution_m"] == 30.0
     assert result.metadata["l08_fields_written"] is False
+
+def test_non_evaluable_source_quality_propagates():
+    grid = make_grid()
+    landslide, flood, rainfall = make_inputs(grid)
+    landslide = replace(landslide, quality_state=QualityState.NON_EVALUABLE)
+    result = combine_multi_hazard(grid, landslide, flood, rainfall)
+    assert all(state == QualityState.NON_EVALUABLE for state in result.quality_by_cell.values())
+    assert np.all(result.combined_risk == DEFAULT_NODATA_FLOAT)
+
+
+def test_rainfall_state_contract_is_strict():
+    grid = make_grid()
+    landslide, flood, rainfall = make_inputs(grid)
+    bad_state = replace(rainfall, states_by_cell={0: "triggered"})
+    with pytest.raises(MultiHazardModelError, match="state.*invalid"):
+        combine_multi_hazard(grid, landslide, flood, bad_state)
+
+    missing_state = replace(
+        rainfall,
+        states_by_cell={cell_id: state for cell_id, state in rainfall.states_by_cell.items() if cell_id != 0},
+    )
+    with pytest.raises(MultiHazardModelError, match="no L06 state"):
+        combine_multi_hazard(grid, landslide, flood, missing_state)
+
+
+def test_l07_weights_reject_non_numeric_values():
+    with pytest.raises(MultiHazardModelError, match="numeric"):
+        validate_l07_weights({
+            "landslide_weight": "bad",
+            "flood_weight": 0.35,
+            "rainfall_weight": 0.20,
+        })
+
+
+def test_rainfall_boolean_state_cell_id_is_rejected():
+    grid = make_grid()
+    landslide, flood, rainfall = make_inputs(grid)
+    invalid = replace(
+        rainfall,
+        states_by_cell={True: RainfallEvaluationState.TRIGGERED},
+    )
+    with pytest.raises(MultiHazardModelError, match="outside"):
+        combine_multi_hazard(grid, landslide, flood, invalid)
