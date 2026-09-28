@@ -394,6 +394,20 @@ def test_dem_nodata_propagation():
             assert aspect[r, c] == DEFAULT_NODATA_FLOAT
 
 
+def test_dem_nodata_is_not_used_in_horn_arithmetic():
+    """A NoData sentinel must not contaminate neighboring calculations."""
+    dem = np.full((5, 5), 2000.0, dtype=np.float32)
+    dem[2, 2] = DEFAULT_NODATA_FLOAT
+
+    slope, aspect = calculate_slope_and_aspect_arrays(
+        dem, dx=30.0, dy=30.0, nodata=DEFAULT_NODATA_FLOAT
+    )
+
+    # Windows touching the NoData cell are NoData; valid windows stay valid.
+    assert np.all(slope[1:4, 1:4] == DEFAULT_NODATA_FLOAT)
+    assert slope[0, 0] == DEFAULT_NODATA_FLOAT  # border remains NoData by design
+
+
 def test_generate_terrain_derivatives_raster(tmp_path):
     """Verify end-to-end GeoTIFF slope and aspect generation from synthetic DEM."""
     rows, cols = 10, 10
