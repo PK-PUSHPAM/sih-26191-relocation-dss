@@ -145,3 +145,20 @@ def test_result_contains_provenance_metadata():
 def test_duplicate_site_ids_are_not_silently_merged():
     result = run_l11([site(), site(site_id="S1")])
     assert len(result.records) == 2
+
+def test_parameter_validation_is_exact_not_tolerant():
+    with pytest.raises(L11Error):
+        run_l11([site()], safety_factor=0.8000000000001)
+
+def test_timestamp_type_is_validated():
+    with pytest.raises(L11Error, match="must be a datetime"):
+        run_l11([site()], execution_timestamp="2026-09-28T00:00:00Z")
+
+def test_source_metadata_must_be_mapping():
+    with pytest.raises(L11Error, match="source_metadata"):
+        run_l11([site()], source_metadata=["bad"])
+
+def test_invalid_input_takes_precedence_over_missing_input():
+    record = run_l11([site(daily_water_liters=None, health_beds=-1)]).records[0]
+    assert record.quality_flag is CapacityQuality.INVALID
+    assert record.effective_cap is None
