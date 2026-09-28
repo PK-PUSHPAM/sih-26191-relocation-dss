@@ -84,3 +84,38 @@ def test_hazards_endpoint_matches_hazard_layer_schema():
         assert payload["items"] == []
     finally:
         app.dependency_overrides.pop(_db_session, None)
+
+def test_optimize_rejects_empty_distance_key_parts():
+    client = TestClient(app)
+    payload = {
+        "habitations": [{"habitation_id": "H1", "exposed_population": 10}],
+        "sites": [{"site_id": "S1", "effective_capacity": 10, "hazard": 0,
+                   "feasible_habitations": ["H1"]}],
+        "distances": {"H1::": 10},
+        "distance_weight": 1, "unmet_penalty": 100, "hazard_weight": 0,
+    }
+    assert client.post("/api/v1/optimize", json=payload).status_code == 422
+
+def test_optimize_executes_and_returns_contract(monkeypatch):
+    class FakeResult:
+        status = "OPTIMAL"
+        objective_value = 1.0
+        allocations = ()
+        unmet = ()
+        metadata = {"database_write": False}
+    monkeypatch.setattr("src.api.app.run_l13", lambda *args, **kwargs: FakeResult())
+    client = TestClient(app)
+    payload = {
+        "habitations": [{"habitation_id": "H1", "exposed_population": 10}],
+        "sites": [{"site_id": "S1", "effective_capacity": 10, "hazard": 0,
+                   "feasible_habitations": ["H1"]}],
+        "distances": {"H1::S1": 10},
+        "distance_weight": 1, "unmet_penalty": 100, "hazard_weight": 0,
+    }
+    response = client.post("/api/v1/optimize", json=payload)
+    assert response.status_code == 200
+    assert response.json()["status"] == "OPTIMAL"
+
+def test_non_string_habitation_path_rejected():
+    client = TestClient(app)
+    assert client.get("/api/v1/habitations/%20").status_code in {400,404}
