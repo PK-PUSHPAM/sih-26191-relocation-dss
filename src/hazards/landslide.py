@@ -482,6 +482,8 @@ def _read_aligned_raster(path: Path, grid: CanonicalGridDefinition, categorical:
     with rasterio.open(path) as source:
         if source.crs is None:
             raise LandslideModelError(f"Raster input has no CRS: {path}")
+        if source.nodata is None:
+            raise LandslideModelError(f"Raster input has no explicit NoData value: {path}")
     aligned_path = path
     aligned, _ = is_aligned_to_canonical_grid(path, grid)
     if not aligned:
@@ -508,13 +510,17 @@ def run_landslide_baseline(
     renormalized. Real files are never synthesized when an input is absent.
     """
     _require_canonical_grid(grid)
+    allowed_inputs = {"study_area", "dem"} | L04_FACTOR_NAMES
+    unknown_inputs = set(input_paths) - allowed_inputs
+    if unknown_inputs:
+        raise LandslideModelError(f"Unknown L04 input names: {sorted(unknown_inputs)}")
     required = {"study_area", "dem"}
     missing = sorted(name for name in required if name not in input_paths or not Path(input_paths[name]).is_file())
     if missing:
         raise LandslideDataPendingError(f"Required L04 real inputs are absent: {missing}")
     mappings = categorical_mappings or {}
     proximity = proximity_parameters_m or {}
-    configured_weights = dict(weights or get_weights_config()["landslide_baseline"])
+    configured_weights = validate_weights(dict(weights or get_weights_config()["landslide_baseline"]))
     factors: Dict[str, np.ndarray] = {}
 
     with TemporaryDirectory(prefix="l04_") as temporary_directory:
@@ -554,6 +560,11 @@ def run_landslide_baseline(
             evidence = inventory_evidence(inventory.inventory, (grid.height, grid.width), grid.transform)
             factors["inventory"] = np.where(boundary_mask, evidence.evidence, DEFAULT_NODATA_FLOAT).astype(np.float32)
 
+        missing_factor_weights = set(factors) - set(configured_weights)
+        if missing_factor_weights:
+            raise LandslideModelError(
+                f"No configured weights for selected L04 factors: {sorted(missing_factor_weights)}"
+            )
         selected_weights = {name: configured_weights[name] for name in factors}
         selected_weight_total = sum(selected_weights.values())
         if selected_weight_total <= 0.0:
