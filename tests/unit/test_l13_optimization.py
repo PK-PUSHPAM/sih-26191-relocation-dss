@@ -131,3 +131,25 @@ def test_no_database_write_and_metadata():
     result = base_run()
     assert result.metadata["solver"] == "OR-Tools CP-SAT"
     assert result.metadata["database_write"] is False
+
+def test_duplicate_ids_are_rejected():
+    with pytest.raises(L13Error, match="duplicate habitation_id"):
+        run_l13([h("H1", 10), h("H1", 20)], [s("S1", 10, 0.0, ["H1"])],
+                {("H1", "S1"): 1}, distance_weight=1, unmet_penalty=1, hazard_weight=0)
+
+def test_malformed_source_metadata_is_rejected():
+    with pytest.raises(L13Error, match="source_metadata"):
+        run_l13([h("H1", 10)], [s("S1", 10, 0.0, ["H1"])],
+                {("H1", "S1"): 1}, distance_weight=1, unmet_penalty=1, hazard_weight=0,
+                source_metadata=["bad"])
+
+def test_non_model_inputs_are_rejected():
+    with pytest.raises(L13Error, match="HabitationDemand"):
+        run_l13([{"habitation_id":"H1","exposed_population":10}],
+                [s("S1",10,0.0,["H1"])], {},
+                distance_weight=1, unmet_penalty=1, hazard_weight=0)
+
+def test_boolean_and_decimal_like_numeric_values_are_handled_strictly():
+    with pytest.raises(L13Error):
+        run_l13([h("H1",10)], [s("S1",10,0.0,["H1"])], {("H1","S1"):1},
+                distance_weight=True, unmet_penalty=1, hazard_weight=0)
