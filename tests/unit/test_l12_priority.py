@@ -58,8 +58,9 @@ def test_zero_exposed_population_is_valid():
     assert record.tier is PriorityTier.MEDIUM_TERM
 
 
-def test_duplicate_habitation_ids_are_not_merged():
-    assert len(run_l12([habitation(), habitation(habitation_id="H1")]).records) == 2
+def test_duplicate_habitation_ids_are_rejected():
+    with pytest.raises(L12Error, match="must be unique"):
+        run_l12([habitation(), habitation(habitation_id="H1")])
 
 
 def test_frozen_parameters():
