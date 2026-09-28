@@ -117,7 +117,10 @@ def validate_l07_weights(weights: Optional[Mapping[str, float]] = None) -> Dict[
     expected = {"landslide_weight", "flood_weight", "rainfall_weight"}
     if set(configured) != expected:
         raise MultiHazardModelError("L07 weights must define exactly landslide, flood, and rainfall weights")
-    result = {name.removesuffix("_weight"): float(value) for name, value in configured.items()}
+    try:
+        result = {name.removesuffix("_weight"): float(value) for name, value in configured.items()}
+    except (TypeError, ValueError) as exc:
+        raise MultiHazardModelError("L07 hazard weights must be numeric") from exc
     if any(not np.isfinite(value) or value <= 0.0 for value in result.values()):
         raise MultiHazardModelError("L07 hazard weights must be finite and positive")
     if not np.isclose(sum(result.values()), 1.0, atol=1e-6):
@@ -169,9 +172,15 @@ def _rainfall_values(rainfall: RainfallCombinationInput, grid: CanonicalGridDefi
     valid_grid_values = array != DEFAULT_NODATA_FLOAT
     if np.any(~np.isfinite(array[valid_grid_values])) or np.any(~np.isin(array[valid_grid_values], (0.0, 1.0))):
         raise MultiHazardModelError("L07 rainfall input must contain only binary trigger values or NoData")
-    for cell_id in rainfall.states_by_cell:
-        if not isinstance(cell_id, int) or not 0 <= cell_id < grid.total_cells:
+    for cell_id, state in rainfall.states_by_cell.items():
+        if isinstance(cell_id, bool) or not isinstance(cell_id, int) or not 0 <= cell_id < grid.total_cells:
             raise MultiHazardModelError(f"L07 rainfall state cell_id {cell_id!r} is outside the canonical grid")
+        if not isinstance(state, RainfallEvaluationState):
+            raise MultiHazardModelError(f"L07 rainfall state for cell {cell_id} is invalid")
+    for cell_id in range(grid.total_cells):
+        row, col = grid.row_col_from_cell_id(cell_id)
+        if array[row, col] != DEFAULT_NODATA_FLOAT and cell_id not in rainfall.states_by_cell:
+            raise MultiHazardModelError(f"L07 rainfall trigger value has no L06 state for cell {cell_id}")
     values = np.full(array.shape, DEFAULT_NODATA_FLOAT, dtype=np.float32)
     quality = np.full(array.shape, QualityState.NON_EVALUABLE.value, dtype=object)
     for cell_id in range(grid.total_cells):
@@ -221,8 +230,12 @@ def combine_multi_hazard(
         row, col = grid.row_col_from_cell_id(cell_id)
         cell_values = {"landslide": l_values[row, col], "flood": f_values[row, col], "rainfall": rainfall_values[row, col]}
         invalid = (landslide is not None and landslide.quality_state == QualityState.INVALID) or (flood is not None and flood.quality_state == QualityState.INVALID) or rainfall_quality[row, col] == QualityState.INVALID.value
+        source_non_evaluable = (
+            (landslide is not None and landslide.quality_state == QualityState.NON_EVALUABLE)
+            or (flood is not None and flood.quality_state == QualityState.NON_EVALUABLE)
+        )
         missing = any(value == DEFAULT_NODATA_FLOAT for value in cell_values.values()) or landslide is None or flood is None or rainfall is None
-        state = QualityState.INVALID if invalid else QualityState.NON_EVALUABLE if missing else QualityState.COMPLETE
+        state = QualityState.INVALID if invalid else QualityState.NON_EVALUABLE if missing or source_non_evaluable else QualityState.COMPLETE
         quality_grid[row, col] = state.value
         quality_by_cell[cell_id] = state
         if state == QualityState.COMPLETE:
